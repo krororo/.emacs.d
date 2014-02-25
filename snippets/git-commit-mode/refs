@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: refs
+# key: re
+# --
+refs #`(let ((branch (magit-get-current-branch))
+             (re "\\(dev\\|bug\\)\\([0-9]*\\)"))
+         (when (string-match re branch)
+           (concat (match-string 2 branch) " ")))`$0

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: refs
+# key: re
+# --
+refs #$1 $0
