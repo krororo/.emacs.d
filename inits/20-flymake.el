@@ -15,3 +15,7 @@
           )
         )
       (setq count (1- count)))))
+
+;; keybind
+(global-set-key (kbd "M-n") 'flymake-goto-next-error)
+(global-set-key (kbd "M-p") 'flymake-goto-prev-error)
