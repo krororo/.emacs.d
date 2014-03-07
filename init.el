@@ -40,6 +40,7 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "gray7" :foreground "white" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 105 :width normal :foundry "unknown" :family "Ricty"))))
  '(enh-ruby-op-face ((t (:foreground "violet"))))
+ '(flymake-warnline ((t (:background "chocolate"))))
  '(font-lock-comment-face ((t (:foreground "red"))))
  '(font-lock-keyword-face ((t (:foreground "magenta"))))
  '(magit-diff-add ((t (:foreground "green"))))
