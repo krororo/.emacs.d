@@ -17,6 +17,13 @@
 (init-loader-load "~/.emacs.d/inits")
 
 ;; load proxy setting
+;; example
+;;  (setq url-proxy-services '(("http" . "proxy.example.com:8080")
+;;                            ("https" . "proxy.example.com:8080")))
+;;  (setq url-http-proxy-basic-auth-storage
+;;        (list (list "proxy.example.com:8080"
+;;                    (cons "description"
+;;                          (base64-encode-string "username:password")))))
 (when (file-exists-p (expand-file-name "~/.emacs.d/proxy-setting.el"))
   (load-file (expand-file-name "~/.emacs.d/proxy-setting.el")))
 
