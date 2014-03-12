@@ -15,4 +15,4 @@
                     anything-c-source-recentf
                     ,@git-source)))
     (anything-other-buffer sources "*anything for files*")))
-(global-set-key (kbd "C-x C-g") 'my-custom-anything-for-files)
+(global-set-key (kbd "C-c C-f") 'my-custom-anything-for-files)
