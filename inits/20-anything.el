@@ -13,7 +13,6 @@
                             anything-git-files:all-source)))
          (sources `(anything-c-source-buffers+
                     anything-c-source-recentf
-                    anything-c-source-files-in-current-dir+
                     ,@git-source)))
     (anything-other-buffer sources "*anything for files*")))
 (global-set-key (kbd "C-x C-g") 'my-custom-anything-for-files)
