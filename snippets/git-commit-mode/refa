@@ -1,0 +1,5 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: refactor: message
+# key: refa
+# --
+refactor: $0
