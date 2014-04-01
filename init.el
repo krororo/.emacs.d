@@ -41,7 +41,8 @@
  '(rspec-spec-command "rspec -c")
  '(rspec-use-rake-when-possible nil)
  '(ruby-deep-indent-paren-style nil)
- '(ruby-insert-encoding-magic-comment nil))
+ '(ruby-insert-encoding-magic-comment nil)
+ '(yas-prompt-functions (quote (my-yas/prompt))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -62,6 +63,7 @@
  '(review-mode-header1-face ((t (:foreground "chartreuse" :weight bold))))
  '(review-mode-header2-face ((t (:foreground "lawn green" :weight bold))))
  '(review-mode-header3-face ((t (:foreground "green" :weight bold))))
+ '(review-mode-header4-face ((t (:foreground "#0dd" :weight bold))))
  '(review-mode-italic-face ((t (:foreground "red" :slant italic :weight bold))))
  '(review-mode-title-face ((t (:foreground "cyan" :weight bold))))
  '(review-mode-underline-face ((t (:foreground "cyan" :underline t)))))
