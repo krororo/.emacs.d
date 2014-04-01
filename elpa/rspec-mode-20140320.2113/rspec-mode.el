@@ -1,12 +1,12 @@
 ;;; rspec-mode.el --- Enhance ruby-mode for RSpec
 
-;; Copyright (C) 2008-2013 Peter Williams <http://barelyenough.org> and others
+;; Copyright (C) 2008-2014 Peter Williams <http://barelyenough.org> and others
 ;; Author: Peter Williams, et al.
 ;; URL: http://github.com/pezra/rspec-mode
 ;; Created: 2011
 ;; Version: 1.8
 ;; Keywords: rspec ruby
-;; Package-Requires: ((ruby-mode "1.0"))
+;; Package-Requires: ((ruby-mode "1.0") (cl-lib "0.4"))
 
 ;; This file is NOT part of GNU Emacs.
 ;;
@@ -74,8 +74,6 @@
 ;;
 ;; If `rspec-use-rvm` is set to true `rvm.el' is required.
 ;;
-;; The expectations depend on `el-expectations.el'.
-;;
 ;;; Change Log:
 ;;
 ;; 1.8 - Support for Capybara's acceptance test DSL (Ales Guzik)
@@ -107,7 +105,7 @@
 (require 'ruby-mode)
 (require 'ansi-color)
 (require 'compile)
-(eval-when-compile (require 'cl))
+(require 'cl-lib)
 
 (define-prefix-command 'rspec-mode-verifiable-keymap)
 (define-prefix-command 'rspec-mode-keymap)
@@ -115,6 +113,7 @@
 (define-key rspec-mode-verifiable-keymap (kbd "v") 'rspec-verify)
 (define-key rspec-mode-verifiable-keymap (kbd "a") 'rspec-verify-all)
 (define-key rspec-mode-verifiable-keymap (kbd "t") 'rspec-toggle-spec-and-target)
+(define-key rspec-mode-verifiable-keymap (kbd "4 t") 'rspec-find-spec-or-target-other-window)
 (define-key rspec-mode-verifiable-keymap (kbd "r") 'rspec-rerun)
 (define-key rspec-mode-verifiable-keymap (kbd "m") 'rspec-verify-matching)
 (define-key rspec-mode-verifiable-keymap (kbd "c") 'rspec-verify-continue)
@@ -185,6 +184,11 @@ Not used when running specs using Zeus or Spring."
   :type 'string
   :group 'rspec-mode)
 
+(defcustom rspec-command-options "--format documentation"
+  "Default options used with rspec-command"
+  :type 'string
+  :group 'rspec-mode)
+
 ;;;###autoload
 (define-minor-mode rspec-mode
   "Minor mode for RSpec files"
@@ -193,8 +197,12 @@ Not used when running specs using Zeus or Spring."
       (progn
         (rspec-set-imenu-generic-expression)
         (when (boundp 'yas-extra-modes)
-          (make-local-variable 'yas-extra-modes)
-          (add-to-list 'yas-extra-modes 'rspec-mode)))
+          (if (fboundp 'yas-activate-extra-mode)
+              ;; Yasnippet 0.8.1+
+              (yas-activate-extra-mode 'rspec-mode)
+            (make-local-variable 'yas-extra-modes)
+            (add-to-list 'yas-extra-modes 'rspec-mode)
+            (yas--load-pending-jits))))
     (setq imenu-create-index-function 'ruby-imenu-create-index)
     (setq imenu-generic-expression nil)
     (when (boundp 'yas-extra-modes)
@@ -231,7 +239,7 @@ Not used when running specs using Zeus or Spring."
 (defun rspec-install-snippets ()
   "Add `rspec-snippets-dir' to `yas-snippet-dirs' and load snippets from it."
   (require 'yasnippet)
-  (setq yas-snippet-dirs (cons rspec-snippets-dir (yas-snippet-dirs)))
+  (add-to-list 'yas-snippet-dirs rspec-snippets-dir t)
   (yas-load-directory rspec-snippets-dir))
 
 (defun rspec-class-from-file-name ()
@@ -322,9 +330,9 @@ in long-running test suites."
   (let ((current-spec-file (rspec-compress-spec-file
                             (rspec-spec-file-for (buffer-file-name)))))
     (rspec-run-multiple-files
-     (loop for file in (rspec-all-spec-files (buffer-file-name))
-           when (not (string-lessp file current-spec-file))
-           collect file)
+     (cl-loop for file in (rspec-all-spec-files (buffer-file-name))
+              when (not (string-lessp file current-spec-file))
+              collect file)
      (rspec-core-options))))
 
 (defun rspec-verify-single ()
@@ -344,12 +352,10 @@ in long-running test suites."
   (rspec-run-single-file (dired-current-directory) (rspec-core-options)))
 
 (defun rspec-dired-verify-single ()
-  "Runs marked specs or spec at point (works with directories too).
-Doesn't use rake, calls rspec directly."
+  "Runs marked specs or spec at point (works with directories too)."
   (interactive)
-  (let (rspec-use-rake-when-possible)
-    (rspec-compile (mapconcat 'identity (dired-get-marked-files) " ")
-                   (rspec-core-options))))
+  (rspec-compile (rspec-runner-target (dired-get-marked-files))
+                 (rspec-core-options)))
 
 (defun rspec-verify-all ()
   "Runs the 'spec' rake task for the project of the current file."
@@ -357,14 +363,23 @@ Doesn't use rake, calls rspec directly."
   (rspec-run (rspec-core-options)))
 
 (defun rspec-toggle-spec-and-target ()
-  "Switches to the spec for the current buffer if it is a
-   non-spec file, or switch to the target of the current buffer
-   if the current is a spec"
+  "Switches to the spec or the target file for the current buffer.
+If the current buffer is visiting a spec file, switches to the
+target, otherwise the spec."
   (interactive)
-  (find-file
-   (if (rspec-buffer-is-spec-p)
-       (rspec-target-file-for (buffer-file-name))
-     (rspec-spec-file-for (buffer-file-name)))))
+  (find-file (rspec-spec-or-target)))
+
+(defun rspec-find-spec-or-target-other-window ()
+  "Finds in the other window the spec or the target file.
+If the current buffer is visiting a spec file, finds the target,
+otherwise the spec."
+  (interactive)
+  (find-file-other-window (rspec-spec-or-target)))
+
+(defun rspec-spec-or-target ()
+  (if (rspec-buffer-is-spec-p)
+      (rspec-target-file-for (buffer-file-name))
+    (rspec-spec-file-for (buffer-file-name))))
 
 (defun rspec-spec-directory-has-lib? (a-file-name)
   (file-directory-p (concat (rspec-spec-directory a-file-name) "/lib")))
@@ -390,10 +405,10 @@ Doesn't use rake, calls rspec directly."
   "Find the target for a-spec-file-name"
   (car
    (file-expand-wildcards
-        (replace-regexp-in-string
-         "/spec/"
-         (if (rspec-spec-lib-file-p a-spec-file-name) "/" "/*/")
-         (rspec-targetize-file-name a-spec-file-name)))))
+    (replace-regexp-in-string
+     "/spec/"
+     (if (rspec-spec-lib-file-p a-spec-file-name) "/" "/*/")
+     (rspec-targetize-file-name a-spec-file-name)))))
 
 (defun rspec-specize-file-name (a-file-name)
   "Returns a-file-name but converted in to a spec file name"
@@ -403,9 +418,9 @@ Doesn't use rake, calls rspec directly."
 
 (defun rspec-targetize-file-name (a-file-name)
   "Returns a-file-name but converted into a non-spec file name"
-     (concat (file-name-directory a-file-name)
-             (rspec-file-name-with-default-extension
-              (replace-regexp-in-string "_spec\\.rb" "" (file-name-nondirectory a-file-name)))))
+  (concat (file-name-directory a-file-name)
+          (rspec-file-name-with-default-extension
+           (replace-regexp-in-string "_spec\\.rb" "" (file-name-nondirectory a-file-name)))))
 
 (defun rspec-file-name-with-default-extension (a-file-name)
   "Adds .rb file extension to a-file-name if it does not already have an extension"
@@ -434,9 +449,9 @@ Doesn't use rake, calls rspec directly."
 (defun rspec-all-related-spec-files (a-file)
   (let* ((expected-name (file-name-nondirectory (rspec-spec-file-for a-file)))
          (expected-spec-file (concat "/" expected-name)))
-    (loop for file in (rspec-all-spec-files a-file)
-          when (string-match-p expected-spec-file file)
-          collect file)))
+    (cl-loop for file in (rspec-all-spec-files a-file)
+             when (string-match-p expected-spec-file file)
+             collect file)))
 
 (defun rspec-all-files-under-directory (dir)
   (let ((files (file-expand-wildcards (concat dir "/*") nil)))
@@ -451,23 +466,23 @@ Doesn't use rake, calls rspec directly."
 
 (defun rspec-all-spec-files (a-file)
   (mapcar 'rspec-compress-spec-file
-          (sort (loop for file in (rspec-all-files-under-directory
-                                   (rspec-spec-directory a-file))
-                      when (rspec-spec-file-p file)
-                      collect file)
+          (sort (cl-loop for file in (rspec-all-files-under-directory
+                                      (rspec-spec-directory a-file))
+                         when (rspec-spec-file-p file)
+                         collect file)
                 'string-lessp)))
 
 (defun rspec-spec-file-p (a-file-name)
   "Returns true if the specified file is a spec"
   (numberp (string-match rspec-spec-file-name-re a-file-name)))
 
-(defun rspec-core-options (&optional default-options)
-  "Returns string of options that instructs spec to use options file if it exists, or sensible defaults otherwise"
+(defun rspec-core-options ()
+  "Returns string of options that instructs spec to use options
+file if it exists, or sensible defaults otherwise"
   (cond ((and rspec-use-opts-file-when-available
               (file-readable-p (rspec-spec-opts-file)))
-         (concat "--options " (rspec-spec-opts-file)))
-        (t (or default-options
-            (rspec-default-options)))))
+         (concat "--options " (shell-quote-argument (rspec-spec-opts-file))))
+        (t rspec-command-options)))
 
 (defun rspec-bundle-p ()
   (and rspec-use-bundler-when-possible
@@ -481,21 +496,22 @@ Doesn't use rake, calls rspec directly."
   (and rspec-use-rake-when-possible
        ;; Looks inefficient, but the calculation of the root is quite
        ;; fast. Unless this is used over TRAMP, I suppose.
-       (not (rspec-spring-p))
+       (not (or (rspec-spring-p) (rspec-zeus-p)))
        (file-exists-p (concat (rspec-project-root) "Rakefile"))))
 
 (defun rspec-spring-p ()
   (and rspec-use-spring-when-possible
-       (file-exists-p (concat (rspec-project-root) "tmp/spring/spring.pid"))))
+       (let ((root (rspec-project-root)))
+         (or
+          ;; Older versions
+          (file-exists-p (concat root "tmp/spring/spring.pid"))
+          ;; 0.9.2+
+          (file-exists-p (concat temporary-file-directory "spring/"
+                                 (md5 (substring root 0 -1)) ".pid"))))))
 
 (defun rspec2-p ()
   (or (string-match "rspec" rspec-spec-command)
       (file-readable-p (concat (rspec-project-root) ".rspec"))))
-
-(defun rspec-default-options ()
-  (if (rspec2-p)
-      "--format documentation"
-    (concat "--format specdoc " "--reverse")))
 
 (defun rspec-spec-opts-file ()
   "Returns filename of spec opts file"
@@ -524,9 +540,14 @@ Doesn't use rake, calls rspec directly."
             (when use-rake "\'"))))
 
 (defun rspec-runner-target (target)
-  "Returns target file/directory wrapped in SPEC if using rake"
+  "Processes TARGET to pass it to the runner.
+TARGET can be a file, a directory, or a list of such."
   (let ((use-rake (rspec-rake-p)))
-    (concat (when use-rake "SPEC=\'") target (when use-rake "\'"))))
+    (concat (when use-rake "SPEC=\'")
+            (if (listp target)
+                (mapconcat #'shell-quote-argument target " ")
+              (shell-quote-argument target))
+            (when use-rake "\'"))))
 
 ;;;###autoload
 (defun rspec-buffer-is-spec-p ()
@@ -536,7 +557,9 @@ Doesn't use rake, calls rspec directly."
 
 (defun rspec-run (&optional opts)
   "Runs spec with the specified options"
-  (rspec-compile (rspec-spec-directory (rspec-project-root)) opts))
+  (rspec-compile (rspec-runner-target
+                  (rspec-spec-directory (rspec-project-root)))
+                 opts))
 
 (defun rspec-run-single-file (spec-file &rest opts)
   "Runs spec on a file with the specified options"
@@ -546,7 +569,7 @@ Doesn't use rake, calls rspec directly."
   "Runs spec on a list of files with the specified options"
   (if (null spec-files)
       (message "No spec files found!")
-    (rspec-compile (rspec-runner-target (mapconcat 'identity spec-files " ")) opts)))
+    (rspec-compile (rspec-runner-target spec-files) opts)))
 
 (defvar rspec-last-directory nil
   "Directory the last spec process ran in.")
@@ -562,10 +585,10 @@ Doesn't use rake, calls rspec directly."
     (let ((default-directory rspec-last-directory))
       (apply #'rspec-compile rspec-last-arguments))))
 
-(defun rspec-compile (a-file-or-dir &optional opts)
-  "Runs a compile for the specified file or directory with the specified options."
+(defun rspec-compile (target &optional opts)
+  "Runs a compile for TARGET with the specified options."
   (setq rspec-last-directory default-directory
-        rspec-last-arguments (list a-file-or-dir opts))
+        rspec-last-arguments (list target opts))
 
   (if rspec-use-rvm
       (rvm-activate-corresponding-ruby))
@@ -574,7 +597,7 @@ Doesn't use rake, calls rspec directly."
         (compilation-scroll-output t))
     (compile (mapconcat 'identity `(,(rspec-runner)
                                     ,(rspec-runner-options opts)
-                                    ,a-file-or-dir) " ")
+                                    ,target) " ")
              'rspec-compilation-mode)))
 
 (defvar rspec-compilation-mode-font-lock-keywords
