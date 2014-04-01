@@ -1,6 +1,6 @@
 ;; ruby-mode
 (setq auto-mode-alist
-      (append '(("\\.ru$\\|\\.rake$\\|Rakefile\\|Gemfile\\|\\.plugin$\\|\\.gemspec$" . ruby-mode))
+      (append '(("\\.ru$\\|\\.rake$\\|Rakefile\\|Gemfile$\\|\\.plugin$\\|\\.gemspec$" . ruby-mode))
               auto-mode-alist))
 (font-lock-add-keywords
  'ruby-mode
