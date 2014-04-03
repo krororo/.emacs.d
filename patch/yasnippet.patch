@@ -1,0 +1,14 @@
+diff --git a/yasnippet.el b/yasnippet.el
+index f4b4751..49c55cd 100644
+--- a/yasnippet.el
++++ b/yasnippet.el
+@@ -2310,7 +2310,8 @@ visited file in `snippet-mode'."
+   (interactive)
+   (let* ((yas-buffer-local-condition 'always)
+          (templates (yas--all-templates (yas--get-snippet-tables)))
+-         (yas-prompt-functions '(yas-ido-prompt yas-completing-prompt))
++         ;; anything インターフェイスを使用するためコメントアウト
++         ;; (yas-prompt-functions '(yas-ido-prompt yas-completing-prompt))
+          (template (and templates
+                         (or (yas--prompt-for-template templates
+                                                      "Choose a snippet template to edit: ")
