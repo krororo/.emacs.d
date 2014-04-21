@@ -1,4 +1,5 @@
 # -*- mode: snippet -*-
+# key: before
 # name: before do ... end
 # --
 before$1 do

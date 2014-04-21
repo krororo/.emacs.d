@@ -1,4 +1,5 @@
 # -*- mode: snippet -*-
+# key: describe
 # name: describe Class do ... end
 # expand-env: ((top-level (rspec-top-level-desc-p)))
 # --
