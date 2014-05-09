@@ -25,5 +25,9 @@
       (indent-line-to indent)
       (when (> offset 0) (forward-char offset)))))
 
-;; flymake setting
-(add-hook 'ruby-mode-hook 'flymake-ruby-load)
+(add-hook 'ruby-mode-hook
+          '(lambda()
+             ;; flymake setting
+             (flymake-ruby-load)
+             ;; yard-mode
+             (yard-mode)))
