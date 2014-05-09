@@ -4,7 +4,7 @@
       '("~/.emacs.d/snippets"
         "~/.emacs.d/elisp/yasnippet/snippets"))
 (yas-global-mode 1)
-(define-key yas-minor-mode-map (kbd "SPC") 'yas-expand)
+(define-key yas-minor-mode-map (kbd "C-o") 'yas-expand)
 (define-key yas-minor-mode-map (kbd "TAB") nil)
 (define-key yas-minor-mode-map [(tab)] nil)
 (define-key yas-minor-mode-map (kbd "C-x i i") 'yas-insert-snippet)
