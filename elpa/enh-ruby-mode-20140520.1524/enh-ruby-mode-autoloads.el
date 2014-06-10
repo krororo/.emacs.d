@@ -4,7 +4,7 @@
 
 
 ;;;### (autoloads (enh-ruby-mode) "enh-ruby-mode" "enh-ruby-mode.el"
-;;;;;;  (21139 59885 281877 509000))
+;;;;;;  (21398 47643 607460 267000))
 ;;; Generated autoloads from enh-ruby-mode.el
 
 (autoload 'enh-ruby-mode "enh-ruby-mode" "\
@@ -14,16 +14,16 @@ Enhanced Major mode for editing Ruby code.
 
 \(fn)" t nil)
 
-;; (add-to-list 'auto-mode-alist '("\\.rb\\'" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.rb\\'" . enh-ruby-mode))
 
-;; (add-to-list 'auto-mode-alist '("Rakefile\\'" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("Rakefile\\'" . enh-ruby-mode))
 
-;; (add-to-list 'auto-mode-alist '("\\.gemspec\\'" . enh-ruby-mode))
+(add-to-list 'auto-mode-alist '("\\.gemspec\\'" . enh-ruby-mode))
 
 ;;;***
 
-;;;### (autoloads nil nil ("enh-ruby-mode-pkg.el") (21139 59885 336356
-;;;;;;  313000))
+;;;### (autoloads nil nil ("enh-ruby-mode-pkg.el") (21398 47643 667396
+;;;;;;  935000))
 
 ;;;***
 
