@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads (yard-mode) "yard-mode" "yard-mode.el" (21150 43585
-;;;;;;  552539 714000))
+;;;### (autoloads (yard-mode) "yard-mode" "yard-mode.el" (21398 47564
+;;;;;;  76460 107000))
 ;;; Generated autoloads from yard-mode.el
 
 (autoload 'yard-mode "yard-mode" "\
@@ -14,8 +14,8 @@ Font locking and completion for YARD tags and directives
 
 ;;;***
 
-;;;### (autoloads nil nil ("yard-mode-pkg.el") (21150 43585 583042
-;;;;;;  611000))
+;;;### (autoloads nil nil ("yard-mode-pkg.el") (21398 47564 236503
+;;;;;;  632000))
 
 ;;;***
 

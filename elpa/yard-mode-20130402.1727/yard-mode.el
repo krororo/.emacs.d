@@ -2,7 +2,7 @@
 
 ;; Author: Kyle Hargraves
 ;; URL: https://github.com/pd/yard-mode.el
-;; Version: 20130402.1603
+;; Version: 20130402.1727
 ;; X-Original-Version: 0.1
 
 (eval-when-compile (require 'cl))
