@@ -98,6 +98,10 @@
   :group 'feature-mode
   :type  'string)
 
+(defcustom feature-align-steps-after-first-word nil
+  "when set to t, make step lines align on the space after the first word"
+  :type 'boolean
+  :group 'feature-mode)
 ;;
 ;; Keywords and font locking
 ;;
@@ -202,7 +206,7 @@
     (but        . font-lock-keyword-face)
     (and        . font-lock-keyword-face)
     (examples   . font-lock-keyword-face)
-    ("<.*?>"     . font-lock-variable-name-face)
+    ("<.*>"     . font-lock-variable-name-face)
     ("^ *@.*"   . font-lock-preprocessor-face)
     ("^ *#.*"     0 font-lock-comment-face t)))
 
@@ -267,20 +271,68 @@
   "*Amount of offset per level of indentation."
   :type 'integer :group 'feature-mode)
 
+
+
+(defun given-when-then-wordlength (lang)
+  (let* ((when-then-and-words '(given when then and but))
+         (language-keywords (cdr (assoc lang feature-keywords-per-language)))
+         (rexes (append (mapcar
+                         (lambda (kw) (cdr (assoc kw language-keywords)))
+                         when-then-and-words))))
+    (beginning-of-line)
+    ;; white-space means offset -1
+    (if (or (bobp) (eobp))
+        nil
+      (if (looking-at feature-blank-line-re)
+          0
+        (if (some (lambda (rex) (looking-at rex)) rexes)
+            (length (match-string 1))
+          nil)))))
+
+
+(defun compute-given-when-then-offset (lang)
+  (if feature-align-steps-after-first-word
+      (progn
+        (setq current-word-length (given-when-then-wordlength lang))
+        (cond
+         ;; a non-given-when-then-line doesn't adjust the
+         ;; offset
+         ((null current-word-length) 0)
+         ;; the same happens for empty lines
+         ((= 0 current-word-length) 0)
+         ;; we are on a proper line, figure out
+         ;; the lengths of all lines preceding us
+         (t (let ((search (lambda (direction lang)
+                            (forward-line direction)
+                            (setq search-word-length (given-when-then-wordlength lang))
+                            (cond
+                             ((null search-word-length) nil)
+                             (t (cons search-word-length (funcall search direction lang)))))))
+              (setq previous-lengths (delq 0 (save-excursion
+                                                 (funcall search -1 lang))))
+              (if (not (null previous-lengths))
+                  (- (car previous-lengths) current-word-length)
+                0)))))
+    0))
+
+
 (defun feature-compute-indentation ()
   "Calculate the maximum sensible indentation for the current line."
   (save-excursion
     (beginning-of-line)
-    (if (bobp) 10
-      (forward-line -1)
-      (while (and (looking-at feature-blank-line-re)
-                  (> (point) (point-min)))
-        (forward-line -1))
-      (+ (current-indentation)
-         (if (or (looking-at (feature-feature-re (feature-detect-language)))
-                 (looking-at (feature-scenario-re (feature-detect-language)))
-                 (looking-at (feature-background-re (feature-detect-language))))
-             feature-indent-offset 0)))))
+    (let* ((lang (feature-detect-language))
+           (given-when-then-offset (compute-given-when-then-offset lang)))
+      (if (bobp) 10
+        (forward-line -1)
+        (while (and (looking-at feature-blank-line-re)
+                    (> (point) (point-min)))
+          (forward-line -1))
+        (+ (current-indentation)
+           given-when-then-offset
+           (if (or (looking-at (feature-feature-re lang))
+                   (looking-at (feature-scenario-re lang))
+                   (looking-at (feature-background-re lang)))
+               feature-indent-offset 0))))))
 
 (defun feature-indent-line ()
   "Indent the current line.
@@ -337,12 +389,14 @@ back-dent the line by `feature-indent-offset' spaces.  On reaching column
   (set (make-local-variable 'font-lock-keywords)
        (feature-font-lock-keywords-for (feature-detect-language)))
   (set (make-local-variable 'imenu-generic-expression)
-        `(("Scenario:" ,(feature-scenario-name-re (feature-detect-language)) 2)
+        `(("Scenario:" ,(feature-scenario-name-re (feature-detect-language)) 3)
           ("Background:" ,(feature-background-re (feature-detect-language)) 1))))
 
 (defun feature-minor-modes ()
-  "Enable all minor modes for feature mode."
-  (turn-on-orgtbl))
+  "Enable/disable all minor modes for feature mode."
+  (turn-on-orgtbl)
+  (when (fboundp 'electric-indent-mode)
+    (electric-indent-mode -1)))
 
 ;;
 ;; Mode function
@@ -391,23 +445,13 @@ are loaded on startup.  If nil, don't load snippets.")
 ;;
 
 (defun feature-scenario-name-re (language)
-  (concat (feature-scenario-re (feature-detect-language)) "[[:space:]]+\\(.*\\)$"))
-
-(defun feature-scenario-name-at-pos (&optional pos)
-  "Returns the name of the scenario at the specified position. if pos is not specified the current buffer location will be used."
-  (interactive)
-  (let ((start (or pos (point))))
-    (save-excursion
-      (end-of-line)
-      (unless (re-search-backward (feature-scenario-name-re (feature-detect-language)) nil t)
-        (error "Unable to find an scenario"))
-      (match-string-no-properties 2))))
+  (concat (feature-scenario-re (feature-detect-language)) "\\( Outline:?\\)?[[:space:]]+\\(.*\\)$"))
 
 (defun feature-verify-scenario-at-pos (&optional pos)
   "Run the scenario defined at pos.  If post is not specified the current buffer location will be used."
   (interactive)
   (feature-run-cucumber
-   (list "-n" (concat "'" (feature-escape-scenario-name (feature-scenario-name-at-pos)) "'"))
+   (list "-l" (number-to-string (line-number-at-pos)))
    :feature-file (buffer-file-name)))
 
 (defun feature-verify-all-scenarios-in-buffer ()
@@ -443,16 +487,12 @@ are loaded on startup.  If nil, don't load snippets.")
                          feature-file
                        feature-default-directory)))
     (ansi-color-for-comint-mode-on)
-    (let ((default-directory (feature-project-root)))
+    (let ((default-directory (feature-project-root))
+          (compilation-scroll-output t))
       (if feature-use-rvm
           (rvm-activate-corresponding-ruby))
-      (compile (concat (replace-regexp-in-string "\{options\}" opts-str
-                        (replace-regexp-in-string "\{feature\}" feature-arg feature-cucumber-command))) t)))
-  (end-of-buffer-other-window 0))
-
-(defun feature-escape-scenario-name (scenario-name)
-  "Escapes all the characaters in a scenario name that mess up using in the -n options"
-  (replace-regexp-in-string "\\(\"\\)" "\\\\\\\\\\\\\\1" (replace-regexp-in-string "\\([()\']\\|\\[\\|\\]\\)" "\\\\\\1" scenario-name)))
+      (compile (concat (replace-regexp-in-string "{options}" opts-str
+                         (replace-regexp-in-string "{feature}" feature-arg feature-cucumber-command) t t)) t))))
 
 (defun feature-root-directory-p (a-directory)
   "Tests if a-directory is the root of the directory tree (i.e. is it '/' on unix)."
@@ -467,27 +507,41 @@ are loaded on startup.  If nil, don't load snippets.")
         directory
       (feature-project-root (file-name-directory (directory-file-name directory))))))
 
+(defun expand-home-shellism ()
+  (replace-regexp-in-string "~" "$HOME" (feature-project-root))
+  )
+
+
 (defun feature-goto-step-definition ()
   "Goto the step-definition under (point).  Requires ruby."
   (interactive)
   (let* ((root (feature-project-root))
          (input (thing-at-point 'line))
          (_ (set-text-properties 0 (length input) nil input))
-         (result (shell-command-to-string (format "cd %S && ruby %S/find_step.rb %S"
-                                                  root
+         (result (shell-command-to-string (format "cd %S && ruby %S/find_step.rb %s %s %S"
+                                                  (expand-home-shellism)
                                                   feature-support-directory
-                                                  input)))
-         (file-and-line (car (split-string result "\n")))
-         (matched? (string-match "^\\(.+\\):\\([0-9]+\\)$" file-and-line)))
-    (if matched?
-        (let ((file    (format "%s/%s" root (match-string 1 file-and-line)))
-              (line-no (string-to-number (match-string 2 file-and-line))))
-          (find-file file)
-          (goto-char (point-min))
-          (forward-line (1- line-no)))
-      (if (equal "" result)
-          (message "No matching steps found for:\n%s" input)
-        (message "An error occurred:\n%s" result)))))
+                                                  (feature-detect-language)
+                                                  (buffer-file-name)
+                                                  (line-number-at-pos))))
+         (matches (read result))
+         (matches-length (safe-length matches)))
+
+    (if (listp matches)
+        (if (> matches-length 0)
+            (let* ((file-and-line (if (= matches-length 1)
+                                      (cdr (car matches))
+                                    (cdr (assoc (ido-completing-read "Which example needed? " (mapcar (lambda (pair) (car pair))  matches)) matches))))
+                   (matched? (string-match "^\\(.+\\):\\([0-9]+\\)$" file-and-line)))
+              (if matched?
+                  (let ((file (format "%s/%s" root (match-string 1 file-and-line)))
+                        (line-no (string-to-number (match-string 2 file-and-line))))
+                    (find-file file)
+                    (goto-char (point-min))
+                    (forward-line (1- line-no)))
+                (message "An error occured: \n%s" result)))
+          (message "No matching steps found for:\n%s" input))
+      (message "An error occured: \n%s" result))))
 
 (provide 'cucumber-mode)
 (provide 'feature-mode)
