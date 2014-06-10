@@ -2,7 +2,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 
 ;; Authors: Akihisa <akihisa@mail.ne.jp>
-;; Version: 20120811.2127
+;; Version: 20140425.1602
 ;; X-Original-Version: 2.71
 ;; Package-version: 2.71
 ;; Keywords: convenience
@@ -803,7 +803,6 @@ automatic display of the corresponding source code location."
   "Regexp for matching buffer heading line in moccur-grep-mode buffer.")
 (defvar moccur-line-number-regexp "^[ ]*\\([0-9]+\\) "
   "Regexp for matching line numbers in moccur buffer.")
-(defvar regexp nil)
 (defvar moccur-list nil)
 (defvar moccur-overlays nil)
 (make-variable-buffer-local 'moccur-overlays)
@@ -910,7 +909,7 @@ automatic display of the corresponding source code location."
 (define-key isearch-mode-map (kbd "M-o") 'isearch-moccur)
 (define-key isearch-mode-map (kbd "M-O") 'isearch-moccur-all)
 
-;;;; occur
+;;;###autoload
 (defun occur-by-moccur (regexp arg)
   "Use this instead of occur.
 Argument REGEXP regexp.
@@ -2219,6 +2218,7 @@ It serves as a menu to find any of the occurrences in this buffer.
         (setq plist list)))
     list))
 
+;;;###autoload
 (defun moccur-grep-find (dir inputs)
   (interactive
    (list (moccur-grep-read-directory)
@@ -2646,6 +2646,7 @@ It serves as a menu to find any of the occurrences in this buffer.
                        (concat regexp " .") " "))
     (setq moccur-last-command 'dired-do-moccur)))
 
+;;;###autoload
 (defun dired-do-moccur (regexp arg)
   "Show all lines of all buffers containing a match for REGEXP.
 The lines are shown in a buffer named *Moccur*.
@@ -3480,6 +3481,7 @@ line where it was found.
 
 ;;; grep-buffers
 ;;(require 'compile)
+;;;###autoload
 (defun grep-buffers ()
   "*Run `grep` PROGRAM to match EXPRESSION (with optional OPTIONS) \
 on all visited files."
@@ -3555,6 +3557,7 @@ on all visited files."
 (defvar search-buffers-regexp nil)
 (defvar search-buffers-regexp-for-moccur nil)
 
+;;;###autoload
 (defun search-buffers (regexp arg)
   "*Search string of all buffers."
   (interactive (list (search-buffers-regexp-read-from-minibuf)
