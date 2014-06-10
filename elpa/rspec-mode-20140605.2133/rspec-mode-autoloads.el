@@ -5,7 +5,7 @@
 
 ;;;### (autoloads (rspec-enable-appropriate-mode rspec-buffer-is-spec-p
 ;;;;;;  rspec-dired-mode rspec-verifiable-mode rspec-mode) "rspec-mode"
-;;;;;;  "rspec-mode.el" (21304 63723 794459 146000))
+;;;;;;  "rspec-mode.el" (21398 47565 468442 607000))
 ;;; Generated autoloads from rspec-mode.el
 
 (autoload 'rspec-mode "rspec-mode" "\
@@ -39,8 +39,8 @@ Returns true if the current buffer is a spec
 
 ;;;***
 
-;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21304 63723 830389
-;;;;;;  595000))
+;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21398 47565 485131
+;;;;;;  600000))
 
 ;;;***
 
