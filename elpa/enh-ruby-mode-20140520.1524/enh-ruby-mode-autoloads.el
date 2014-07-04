@@ -14,11 +14,11 @@ Enhanced Major mode for editing Ruby code.
 
 \(fn)" t nil)
 
-(add-to-list 'auto-mode-alist '("\\.rb\\'" . enh-ruby-mode))
+;; (add-to-list 'auto-mode-alist '("\\.rb\\'" . enh-ruby-mode))
 
-(add-to-list 'auto-mode-alist '("Rakefile\\'" . enh-ruby-mode))
+;; (add-to-list 'auto-mode-alist '("Rakefile\\'" . enh-ruby-mode))
 
-(add-to-list 'auto-mode-alist '("\\.gemspec\\'" . enh-ruby-mode))
+;; (add-to-list 'auto-mode-alist '("\\.gemspec\\'" . enh-ruby-mode))
 
 ;;;***
 
