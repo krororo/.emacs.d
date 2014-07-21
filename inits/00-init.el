@@ -66,6 +66,10 @@
             (unless (member (get-buffer "*scratch*") (buffer-list))
               (my-make-scratch 1))))
 
+;; bell をならなくする
+(setq visible-bell t)
+(setq ring-bell-function 'ignore)
+
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (put 'dired-find-alternate-file 'disabled nil)
