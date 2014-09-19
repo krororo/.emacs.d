@@ -4,7 +4,7 @@
 
 
 ;;;### (autoloads nil nil ("foreign-regexp-pkg.el" "foreign-regexp.el")
-;;;;;;  (21254 40572 891497 356000))
+;;;;;;  (21531 37723 858101 301000))
 
 ;;;***
 
