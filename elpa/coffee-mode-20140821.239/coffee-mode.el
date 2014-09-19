@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2010 Chris Wanstrath
 
-;; Version: 20140713.1902
-;; X-Original-Version: 0.5.4
+;; Version: 20140821.239
+;; X-Original-Version: 0.5.5
 ;; Keywords: CoffeeScript major mode
 ;; Author: Chris Wanstrath <chris@ozmm.org>
 ;; URL: http://github.com/defunkt/coffee-mode
@@ -125,10 +125,6 @@
 ;; http://xahlee.org/emacs/elisp_syntax_coloring.html, Jason
 ;; Blevins's markdown-mode.el and Steve Yegge's js2-mode for guidance.
 
-;; TODO:
-;; - Make prototype accessor assignments like `String::length: -> 10` pretty.
-;; - mirror-mode - close brackets and parens automatically
-
 ;;; Code:
 
 (require 'comint)
@@ -142,7 +138,7 @@
 ;; Customizable Variables
 ;;
 
-(defconst coffee-mode-version "0.5.2"
+(defconst coffee-mode-version "0.5.5"
   "The version of `coffee-mode'.")
 
 (defgroup coffee nil
@@ -255,6 +251,8 @@ with CoffeeScript."
 ;; Commands
 ;;
 
+(defvar coffee--repl-multiline-initialized nil)
+
 (defun coffee-comint-filter (string)
   (ansi-color-apply
    (replace-regexp-in-string "\x1b\\[.[GJK]" "" string)))
@@ -271,7 +269,7 @@ with CoffeeScript."
             "NODE_NO_READLINE=1"
             coffee-command
             coffee-args-repl))
-
+    (make-local-variable 'coffee--repl-multiline-initialized)
     ;; Workaround for ansi colors
     (add-hook 'comint-preoutput-filter-functions 'coffee-comint-filter nil t))
 
@@ -316,12 +314,19 @@ See `coffee-compile-jump-to-error'."
           (message "Compiled and saved %s" (or output (concat basename ".js")))
           (coffee-revert-buffer-compiled-file file-name))
       (let* ((msg (car (split-string compiler-output "[\n\r]+")))
-             (line (when (string-match "on line \\([0-9]+\\)" msg)
-                     (string-to-number (match-string 1 msg)))))
+             line column)
         (message msg)
-        (when (and coffee-compile-jump-to-error line (> line 0))
-          (goto-char (point-min))
-          (forward-line (1- line)))))))
+        (when (or (string-match "on line \\([0-9]+\\)" msg)
+                  (string-match ":\\([0-9]+\\):\\([0-9]+\\): error:" msg))
+          (setq line (string-to-number (match-string 1 msg)))
+          (when (match-string 2 msg)
+            (setq column (string-to-number (match-string 2 msg))))
+
+          (when coffee-compile-jump-to-error
+            (goto-char (point-min))
+            (forward-line (1- line))
+            (when column
+              (move-to-column (1- column)))))))))
 
 (defun coffee-compile-buffer ()
   "Compiles the current buffer and displays the JavaScript in a buffer
@@ -332,34 +337,32 @@ called `coffee-compiled-buffer-name'."
 (defsubst coffee-generate-sourcemap-p ()
   (cl-find-if (lambda (opt) (member opt '("-m" "--map"))) coffee-args-compile))
 
-(defun coffee-compile-sentinel ()
+(defun coffee-compile-sentinel (file)
   (lambda (proc _event)
     (when (eq (process-status proc) 'exit)
-      (if (not (= (process-exit-status proc) 0))
-          (message "Failed: compiling to JavaScript")
-        (let* ((buffer (get-buffer coffee-compiled-buffer-name))
-               (file (file-name-nondirectory (buffer-file-name)))
-               (props (list :sourcemap (concat (file-name-sans-extension file) ".map")
-                            :line (line-number-at-pos)
-                            :column (current-column)
-                            :source file)))
-          (save-selected-window
-            (pop-to-buffer buffer)
-            (with-current-buffer buffer
-              (let ((buffer-file-name "tmp.js"))
-                (setq buffer-read-only t)
-                (set-auto-mode)
-                (goto-char (point-min))
-                (forward-line 1) ;; 1st line is comment
-                (run-hook-with-args 'coffee-after-compile-hook props)))))))))
+      (save-selected-window
+        (pop-to-buffer (get-buffer coffee-compiled-buffer-name))
+        (ansi-color-apply-on-region (point-min) (point-max))
+        (goto-char (point-min))
+        (if (not (= (process-exit-status proc) 0))
+            (message "Failed: compiling to JavaScript")
+          (let ((props (list :sourcemap (concat (file-name-sans-extension file) ".map")
+                             :line (line-number-at-pos) :column (current-column)
+                             :source file)))
+            (let ((buffer-file-name "tmp.js"))
+              (setq buffer-read-only t)
+              (set-auto-mode)
+              (forward-line 1) ;; 1st line is comment
+              (run-hook-with-args 'coffee-after-compile-hook props))))))))
 
 (defun coffee-start-compile-process (curbuf)
   (lambda (start end)
     (let ((proc (apply 'start-process "coffee-mode"
                        (get-buffer-create coffee-compiled-buffer-name)
-                       coffee-command (append coffee-args-compile '("-s" "-p")))))
+                       coffee-command (append coffee-args-compile '("-s" "-p"))))
+          (curfile (buffer-file-name curbuf)))
       (set-process-query-on-exit-flag proc nil)
-      (set-process-sentinel proc (coffee-compile-sentinel))
+      (set-process-sentinel proc (coffee-compile-sentinel curfile))
       (with-current-buffer curbuf
         (process-send-region proc start end))
       (process-send-eof proc))))
@@ -408,8 +411,21 @@ called `coffee-compiled-buffer-name'."
 (defun coffee-send-region (start end)
   "Send the current region to the inferior Coffee process."
   (interactive "r")
-  (comint-simple-send (coffee-get-repl-proc)
-                      (buffer-substring-no-properties start end)))
+  (deactivate-mark t)
+  (let ((string (buffer-substring-no-properties start end))
+        (multiline-p (> (count-lines start end) 1)))
+    (let ((proc (coffee-get-repl-proc)))
+      (if (not multiline-p)
+          (comint-simple-send proc string)
+        ;; Swith to multiline mode
+        (with-current-buffer (process-buffer proc)
+          (let ((multiline-code (if coffee--repl-multiline-initialized "\026" "\026\026")))
+            (comint-send-string proc multiline-code)
+            (comint-simple-send proc string)
+            (unless (string-match-p "\n\\'" string)
+              (comint-send-string proc "\n"))
+            (comint-send-string proc multiline-code))))
+      (setq coffee--repl-multiline-initialized t))))
 
 (defun coffee-send-buffer ()
   "Send the current buffer to the inferior Coffee process."

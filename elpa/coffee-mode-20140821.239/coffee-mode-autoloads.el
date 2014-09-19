@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads (coffee-mode) "coffee-mode" "coffee-mode.el" (21452
-;;;;;;  63514 346012 0))
+;;;### (autoloads (coffee-mode) "coffee-mode" "coffee-mode.el" (21531
+;;;;;;  37728 534035 324000))
 ;;; Generated autoloads from coffee-mode.el
 
 (autoload 'coffee-mode "coffee-mode" "\
@@ -24,8 +24,8 @@ Major mode for editing CoffeeScript.
 
 ;;;***
 
-;;;### (autoloads nil nil ("coffee-mode-pkg.el") (21452 63514 392013
-;;;;;;  398000))
+;;;### (autoloads nil nil ("coffee-mode-pkg.el") (21531 37728 541569
+;;;;;;  737000))
 
 ;;;***
 
