@@ -4,7 +4,7 @@
 
 
 ;;;### (autoloads (enh-ruby-mode) "enh-ruby-mode" "enh-ruby-mode.el"
-;;;;;;  (21398 47643 607460 267000))
+;;;;;;  (21531 37727 309997 173000))
 ;;; Generated autoloads from enh-ruby-mode.el
 
 (autoload 'enh-ruby-mode "enh-ruby-mode" "\
@@ -22,8 +22,8 @@ Enhanced Major mode for editing Ruby code.
 
 ;;;***
 
-;;;### (autoloads nil nil ("enh-ruby-mode-pkg.el") (21398 47643 667396
-;;;;;;  935000))
+;;;### (autoloads nil nil ("enh-ruby-mode-pkg.el") (21531 37727 314970
+;;;;;;  518000))
 
 ;;;***
 

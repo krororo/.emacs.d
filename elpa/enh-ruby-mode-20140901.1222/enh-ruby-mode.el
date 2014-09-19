@@ -227,8 +227,11 @@ the value changes.
 
 ;;; Mode:
 
+(defalias 'enh-ruby-parent-mode
+  (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
+
 ;;;###autoload
-(define-derived-mode enh-ruby-mode prog-mode "EnhRuby"
+(define-derived-mode enh-ruby-mode enh-ruby-parent-mode "EnhRuby"
   "Enhanced Major mode for editing Ruby code.
 
 \\{enh-ruby-mode-map}"
@@ -293,6 +296,11 @@ the value changes.
  (defface enh-ruby-regexp-delimiter-face
    `((t :foreground ,(erm-darken-color font-lock-string-face)))
    "Face used to highlight regexp delimiters like / and %r."
+   :group 'enh-ruby)
+
+ (defface enh-ruby-regexp-face
+   `((t :foreground ,(face-attribute font-lock-string-face :foreground)))
+   "Face used to highlight the inside of regular expressions"
    :group 'enh-ruby)
 
  (defface enh-ruby-op-face
@@ -584,6 +592,7 @@ modifications to the buffer."
         font-lock-keyword-face
         enh-ruby-heredoc-delimiter-face
         enh-ruby-op-face
+        enh-ruby-regexp-face
         ))
 
 (defun enh-ruby-calculate-indent (&optional start-point)
@@ -845,6 +854,8 @@ With ARG, do it that many times."
   (enh-ruby-forward-sexp 1)
   (forward-line 1)
   (push-mark (point) nil t)
+  (forward-line -1)
+  (end-of-line)
   (enh-ruby-backward-sexp 1)
   (forward-line 0))
 
