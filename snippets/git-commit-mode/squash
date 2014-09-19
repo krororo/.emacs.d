@@ -2,4 +2,4 @@
 # name: squash
 # key: sq
 # --
-squash: $0
+squash! $0
