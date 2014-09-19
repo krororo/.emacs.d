@@ -82,6 +82,7 @@
 
 (eval-when-compile (require 'cl))
 (require 'thingatpt)
+(require 'etags)
 
 (defcustom feature-cucumber-command "rake cucumber CUCUMBER_OPTS=\"{options}\" FEATURE=\"{feature}\""
   "set this variable to the command, which should be used to execute cucumber scenarios."
@@ -102,6 +103,18 @@
   "when set to t, make step lines align on the space after the first word"
   :type 'boolean
   :group 'feature-mode)
+
+(defcustom feature-step-search-path "features/**/*steps.rb"
+  "Command to run ruby"
+  :type 'string
+  :group 'feature-mode)
+
+(defcustom feature-ruby-command "ruby"
+  "Command to run ruby"
+  :type 'string
+  :group 'feature-mode)
+
+
 ;;
 ;; Keywords and font locking
 ;;
@@ -224,7 +237,8 @@
   (define-key feature-mode-map  (kbd "C-c ,s") 'feature-verify-scenario-at-pos)
   (define-key feature-mode-map  (kbd "C-c ,v") 'feature-verify-all-scenarios-in-buffer)
   (define-key feature-mode-map  (kbd "C-c ,f") 'feature-verify-all-scenarios-in-project)
-  (define-key feature-mode-map  (kbd "C-c ,g") 'feature-goto-step-definition))
+  (define-key feature-mode-map  (kbd "C-c ,g") 'feature-goto-step-definition)
+  (define-key feature-mode-map  (kbd "M-.") 'feature-goto-step-definition))
 
 ;; Add relevant feature keybindings to ruby modes
 (add-hook 'ruby-mode-hook
@@ -244,14 +258,20 @@
 
 ;; Constants
 
-(defconst feature-blank-line-re "^[ \t]*$"
+(defconst feature-blank-line-re "^[ \t]*\\(?:#.*\\)?$"
   "Regexp matching a line containing only whitespace.")
+
+(defconst feature-example-line-re "^[ \t]\\\\|"
+  "Regexp matching a line containing scenario example.")
 
 (defun feature-feature-re (language)
   (cdr (assoc 'feature (cdr (assoc language feature-keywords-per-language)))))
 
 (defun feature-scenario-re (language)
   (cdr (assoc 'scenario (cdr (assoc language feature-keywords-per-language)))))
+
+(defun feature-examples-re (language)
+  (cdr (assoc 'examples (cdr (assoc language feature-keywords-per-language)))))
 
 (defun feature-background-re (language)
   (cdr (assoc 'background (cdr (assoc language feature-keywords-per-language)))))
@@ -262,6 +282,10 @@
 
 (defvar feature-mode-hook nil
   "Hook run when entering `feature-mode'.")
+
+(defcustom feature-indent-initial-offset 0
+  "Indentation of the first file"
+  :type 'integer :group 'feature-mode)
 
 (defcustom feature-indent-level 2
   "Indentation of feature statements"
@@ -315,24 +339,67 @@
                 0)))))
     0))
 
+(defun feature-search-for-regex-match (key)
+  "Search for matching regexp on each line"
+  (forward-line -1)
+  (while (and (not (funcall key)) (> (point) (point-min)))
+    (forward-line -1))
+)
 
 (defun feature-compute-indentation ()
   "Calculate the maximum sensible indentation for the current line."
   (save-excursion
     (beginning-of-line)
-    (let* ((lang (feature-detect-language))
-           (given-when-then-offset (compute-given-when-then-offset lang)))
-      (if (bobp) 10
-        (forward-line -1)
-        (while (and (looking-at feature-blank-line-re)
-                    (> (point) (point-min)))
-          (forward-line -1))
-        (+ (current-indentation)
-           given-when-then-offset
-           (if (or (looking-at (feature-feature-re lang))
-                   (looking-at (feature-scenario-re lang))
-                   (looking-at (feature-background-re lang)))
-               feature-indent-offset 0))))))
+    (if (bobp) feature-indent-initial-offset
+      (let* ((lang (feature-detect-language))
+             (given-when-then-offset (compute-given-when-then-offset lang))
+             (saved-indentation (current-indentation)))
+        (cond
+         ((looking-at (feature-feature-re lang))
+          (progn
+            (feature-search-for-regex-match (lambda () (looking-at (feature-feature-re lang))))
+            (current-indentation)
+            ))
+         ((or (looking-at (feature-background-re lang)) (looking-at (feature-scenario-re lang)))
+          (progn
+            (feature-search-for-regex-match
+             (lambda () (or (looking-at (feature-feature-re lang))
+                            (looking-at (feature-background-re lang))
+                            (looking-at (feature-scenario-re lang)))))
+            (cond
+             ((looking-at (feature-feature-re lang)) (+ (current-indentation) feature-indent-offset))
+             ((or (looking-at (feature-background-re lang))
+                  (looking-at (feature-scenario-re lang))) (current-indentation))
+             (t saved-indentation))
+            ))
+         ((looking-at (feature-examples-re lang))
+          (progn
+            (feature-search-for-regex-match
+             (lambda () (or (looking-at (feature-background-re lang))
+                            (looking-at (feature-scenario-re lang)))))
+            (if (or (looking-at (feature-background-re lang)) (looking-at (feature-scenario-re lang)))
+                (+ (current-indentation) feature-indent-offset)
+              saved-indentation)
+            ))
+         ((looking-at feature-example-line-re)
+          (progn
+            (feature-search-for-regex-match
+             (lambda () (looking-at (feature-examples-re lang))))
+            (if (looking-at (feature-examples-re lang))
+                (+ (current-indentation) feature-indent-offset)
+              saved-indentation)
+            ))
+         (t
+          (progn
+            (feature-search-for-regex-match (lambda () (not (looking-at feature-blank-line-re))))
+            (+ (current-indentation)
+               given-when-then-offset
+               (if (or (looking-at (feature-feature-re lang))
+                       (looking-at (feature-scenario-re lang))
+                       (looking-at (feature-background-re lang)))
+                   feature-indent-offset 0))
+            ))
+         )))))
 
 (defun feature-indent-line ()
   "Indent the current line.
@@ -352,6 +419,11 @@ back-dent the line by `feature-indent-offset' spaces.  On reaching column
         (indent-to need)))
     (if (< (current-column) (current-indentation))
         (forward-to-indentation 0))))
+
+(defadvice orgtbl-tab (before feature-indent-table-advice (&optional arg))
+  "Table org mode ignores our indentation, lets force it."
+  (feature-indent-line))
+(ad-activate 'orgtbl-tab)
 
 (defun feature-font-lock-keywords-for (language)
   (let ((result-keywords . ()))
@@ -377,7 +449,8 @@ back-dent the line by `feature-indent-offset' spaces.  On reaching column
 
 (defun feature-mode-variables ()
   (set-syntax-table feature-mode-syntax-table)
-  (setq require-final-newline t)
+  (when mode-require-final-newline
+    (setq require-final-newline t))
   (setq comment-start "# ")
   (setq comment-start-skip "#+ *")
   (setq comment-end "")
@@ -518,12 +591,14 @@ are loaded on startup.  If nil, don't load snippets.")
   (let* ((root (feature-project-root))
          (input (thing-at-point 'line))
          (_ (set-text-properties 0 (length input) nil input))
-         (result (shell-command-to-string (format "cd %S && ruby %S/find_step.rb %s %s %S"
+         (result (shell-command-to-string (format "cd %S && %s %S/find_step.rb %s %s %S %s"
                                                   (expand-home-shellism)
+                                                  feature-ruby-command
                                                   feature-support-directory
                                                   (feature-detect-language)
                                                   (buffer-file-name)
-                                                  (line-number-at-pos))))
+                                                  (line-number-at-pos)
+                                                  (shell-quote-argument feature-step-search-path))))
          (matches (read result))
          (matches-length (safe-length matches)))
 
@@ -536,6 +611,7 @@ are loaded on startup.  If nil, don't load snippets.")
               (if matched?
                   (let ((file (format "%s/%s" root (match-string 1 file-and-line)))
                         (line-no (string-to-number (match-string 2 file-and-line))))
+                    (ring-insert find-tag-marker-ring (point-marker))
                     (find-file file)
                     (goto-char (point-min))
                     (forward-line (1- line-no)))

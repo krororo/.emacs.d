@@ -4,7 +4,7 @@
 
 
 ;;;### (autoloads (feature-mode) "feature-mode" "feature-mode.el"
-;;;;;;  (21398 47642 159478 471000))
+;;;;;;  (21531 37726 237963 652000))
 ;;; Generated autoloads from feature-mode.el
 
 (autoload 'feature-mode "feature-mode" "\
@@ -16,8 +16,8 @@ Major mode for editing plain text stories
 
 ;;;***
 
-;;;### (autoloads nil nil ("feature-mode-pkg.el") (21398 47642 441574
-;;;;;;  379000))
+;;;### (autoloads nil nil ("feature-mode-pkg.el") (21531 37726 265169
+;;;;;;  882000))
 
 ;;;***
 
