@@ -3,8 +3,8 @@
 ;;; Code:
 
 
-;;;### (autoloads nil nil ("migemo-pkg.el" "migemo.el") (21396 64758
-;;;;;;  995132 840000))
+;;;### (autoloads nil nil ("migemo-pkg.el" "migemo.el") (21531 37713
+;;;;;;  594919 612000))
 
 ;;;***
 
