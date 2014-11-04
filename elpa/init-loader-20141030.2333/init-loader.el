@@ -2,8 +2,8 @@
 
 ;; Author: IMAKADO <ken.imakado@gmail.com>
 ;; URL: https://github.com/emacs-jp/init-loader/
-;; Version: 20140828.1806
-;; X-Original-Version: 0.01
+;; Version: 20141030.2333
+;; X-Original-Version: 0.02
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ example, 00_foo.el, 01_bar.el ... 99_keybinds.el."
       (init-loader-re-load init-loader-carbon-emacs-regexp init-dir)
       (setq is-carbon-emacs t))
     ;; Cocoa Emacs
-    (when (or (eq window-system 'ns)
+    (when (or (memq window-system '(ns mac))
               (and (not is-carbon-emacs) ;; for daemon mode
                    (not window-system)
                    (eq system-type 'darwin)))
