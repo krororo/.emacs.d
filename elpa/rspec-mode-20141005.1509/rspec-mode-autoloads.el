@@ -1,25 +1,30 @@
 ;;; rspec-mode-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
+(add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads (rspec-enable-appropriate-mode rspec-buffer-is-spec-p
-;;;;;;  rspec-dired-mode rspec-verifiable-mode rspec-mode) "rspec-mode"
-;;;;;;  "rspec-mode.el" (21531 37687 964824 442000))
+;;;### (autoloads nil "rspec-mode" "rspec-mode.el" (21592 7068 530502
+;;;;;;  640000))
 ;;; Generated autoloads from rspec-mode.el
 
 (autoload 'rspec-mode "rspec-mode" "\
 Minor mode for RSpec files
+
+\\{rspec-mode-map}
 
 \(fn &optional ARG)" t nil)
 
 (autoload 'rspec-verifiable-mode "rspec-mode" "\
 Minor mode for Ruby files that have specs
 
+\\{rspec-verifiable-mode-map}
+
 \(fn &optional ARG)" t nil)
 
 (autoload 'rspec-dired-mode "rspec-mode" "\
 Minor mode for Dired buffers with spec files
+
+\\{rspec-dired-mode-map}
 
 \(fn &optional ARG)" t nil)
 
@@ -39,16 +44,14 @@ Returns true if the current buffer is a spec
 
 ;;;***
 
-;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21531 37687 971787
-;;;;;;  108000))
+;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21592 7068 629761
+;;;;;;  522000))
 
 ;;;***
 
-(provide 'rspec-mode-autoloads)
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; rspec-mode-autoloads.el ends here
