@@ -2,7 +2,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 
 ;; Authors: Akihisa <akihisa@mail.ne.jp>
-;; Version: 20140425.1602
+;; Version: 20140925.454
 ;; X-Original-Version: 2.71
 ;; Package-version: 2.71
 ;; Keywords: convenience
@@ -1670,11 +1670,11 @@ Example:
     (if regexp
         (setq new-lst
               (append new-lst
-                      (mapcar '(lambda (string)
-                                 (if (and moccur-use-keyword
-                                          (assoc string moccur-search-keyword-alist))
-                                     (cdr (assoc string moccur-search-keyword-alist))
-                                   (regexp-quote string)))
+                      (mapcar (lambda (string)
+                                (if (and moccur-use-keyword
+                                         (assoc string moccur-search-keyword-alist))
+                                    (cdr (assoc string moccur-search-keyword-alist))
+                                  (regexp-quote string)))
                               (split-string regexp)))))
     (if (and
          (not new-lst)
@@ -2418,10 +2418,10 @@ It serves as a menu to find any of the occurrences in this buffer.
          (if (listp dir)
              (eval (nth 0 (car dir)))
            (eval dir))))
-    (setq lst (mapcar '(lambda (file)
-                         (if (and (not (string-match "\\.+$" file))
-                                  (file-directory-p file))
-                             (file-name-nondirectory file)))
+    (setq lst (mapcar (lambda (file)
+                        (if (and (not (string-match "\\.+$" file))
+                                 (file-directory-p file))
+                            (file-name-nondirectory file)))
                       (directory-files
                        subdir t)))
     (setq lst (delq nil lst))

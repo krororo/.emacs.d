@@ -1,11 +1,10 @@
 ;;; color-moccur-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
+(add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads (search-buffers grep-buffers dired-do-moccur moccur-grep-find
-;;;;;;  occur-by-moccur) "color-moccur" "color-moccur.el" (21398
-;;;;;;  47645 883431 654000))
+;;;### (autoloads nil "color-moccur" "color-moccur.el" (21592 7105
+;;;;;;  38949 863000))
 ;;; Generated autoloads from color-moccur.el
 
 (autoload 'occur-by-moccur "color-moccur" "\
@@ -40,16 +39,9 @@ It serves as a menu to find any of the occurrences in this buffer.
 
 ;;;***
 
-;;;### (autoloads nil nil ("color-moccur-pkg.el") (21398 47646 9376
-;;;;;;  153000))
-
-;;;***
-
-(provide 'color-moccur-autoloads)
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; color-moccur-autoloads.el ends here
