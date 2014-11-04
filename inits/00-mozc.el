@@ -1,4 +1,5 @@
 ;; mozc
+(add-to-list 'load-path "/usr/share/emacs/site-lisp/emacs-mozc")
 (require 'mozc)
 (setq mozc-candidate-style 'echo-area)
 (set-cursor-color "red")
