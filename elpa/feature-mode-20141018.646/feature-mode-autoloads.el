@@ -1,10 +1,10 @@
 ;;; feature-mode-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
+(add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads (feature-mode) "feature-mode" "feature-mode.el"
-;;;;;;  (21531 37726 237963 652000))
+;;;### (autoloads nil "feature-mode" "feature-mode.el" (21592 7102
+;;;;;;  638920 449000))
 ;;; Generated autoloads from feature-mode.el
 
 (autoload 'feature-mode "feature-mode" "\
@@ -16,16 +16,14 @@ Major mode for editing plain text stories
 
 ;;;***
 
-;;;### (autoloads nil nil ("feature-mode-pkg.el") (21531 37726 265169
-;;;;;;  882000))
+;;;### (autoloads nil nil ("feature-mode-pkg.el") (21592 7102 649514
+;;;;;;  946000))
 
 ;;;***
 
-(provide 'feature-mode-autoloads)
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; feature-mode-autoloads.el ends here
