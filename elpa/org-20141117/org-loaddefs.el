@@ -292,7 +292,7 @@ used to limit the exported source code blocks by language.
 ;;;;;;  org-search-view org-agenda-list org-batch-store-agenda-views
 ;;;;;;  org-store-agenda-views org-batch-agenda-csv org-batch-agenda
 ;;;;;;  org-agenda org-toggle-sticky-agenda) "org-agenda" "org-agenda.el"
-;;;;;;  (21589 48329))
+;;;;;;  (21608 16347))
 ;;; Generated autoloads from org-agenda.el
 
 (autoload 'org-toggle-sticky-agenda "org-agenda" "\
@@ -644,8 +644,8 @@ Extract anniversaries from BBDB for display in the agenda.
 ;;;***
 
 ;;;### (autoloads (org-capture-import-remember-templates org-capture
-;;;;;;  org-capture-string) "org-capture" "org-capture.el" (21591
-;;;;;;  6637))
+;;;;;;  org-capture-string) "org-capture" "org-capture.el" (21608
+;;;;;;  16346))
 ;;; Generated autoloads from org-capture.el
 
 (autoload 'org-capture-string "org-capture" "\
@@ -816,7 +816,7 @@ Otherwise, return nil.
 ;;;### (autoloads (org-agenda-columns org-insert-columns-dblock org-dblock-write:columnview
 ;;;;;;  org-columns-number-to-string org-columns-compute org-columns
 ;;;;;;  org-columns-get-format-and-top-level org-columns-remove-overlays)
-;;;;;;  "org-colview" "org-colview.el" (21589 48329))
+;;;;;;  "org-colview" "org-colview.el" (21608 16346))
 ;;; Generated autoloads from org-colview.el
 
 (autoload 'org-columns-remove-overlays "org-colview" "\
@@ -880,7 +880,7 @@ Turn on or update column view in the agenda.
 ;;;***
 
 ;;;### (autoloads (org-check-version) "org-compat" "org-compat.el"
-;;;;;;  (21589 48329))
+;;;;;;  (21608 16346))
 ;;; Generated autoloads from org-compat.el
 
 (autoload 'org-check-version "org-compat" "\
@@ -1151,7 +1151,7 @@ Dispatch to the appropriate function to store a link to an IRC session.
 ;;;***
 
 ;;;### (autoloads (org-load-noerror-mustsuffix) "org-macs" "org-macs.el"
-;;;;;;  (21589 48329))
+;;;;;;  (21608 16346))
 ;;; Generated autoloads from org-macs.el
 
 (autoload 'org-load-noerror-mustsuffix "org-macs" "\
@@ -1181,7 +1181,7 @@ agenda view showing the flagged items.
 
 ;;;***
 
-;;;### (autoloads (org-plot/gnuplot) "org-plot" "org-plot.el" "62748a5b07b07d7afa43d16955d0b294")
+;;;### (autoloads (org-plot/gnuplot) "org-plot" "org-plot.el" "5fae0ed29ffaee8526d31b4634c56692")
 ;;; Generated autoloads from org-plot.el
 
 (autoload 'org-plot/gnuplot "org-plot" "\
@@ -1886,7 +1886,7 @@ replace any running timer.
 ;;;***
 
 ;;;### (autoloads (org-git-version org-release) "org-version" "org-version.el"
-;;;;;;  (21591 6643))
+;;;;;;  (21609 36596))
 ;;; Generated autoloads from org-version.el
 
 (autoload 'org-release "org-version" "\
@@ -1912,7 +1912,7 @@ The location of ODT styles.")
 ;;;;;;  org-run-like-in-org-mode turn-on-orgstruct++ turn-on-orgstruct
 ;;;;;;  orgstruct-mode org-global-cycle org-cycle org-mode org-clock-persistence-insinuate
 ;;;;;;  turn-on-orgtbl org-version org-babel-load-file org-babel-do-load-languages)
-;;;;;;  "org" "org.el" (21591 6637))
+;;;;;;  "org" "org.el" (21609 36589))
 ;;; Generated autoloads from org.el
 
 (autoload 'org-babel-do-load-languages "org" "\
@@ -2133,7 +2133,7 @@ Call the customize function with org as argument.
 
 ;;;***
 
-;;;### (autoloads nil "ox" "ox.el" "058cae506ddb0a87f175e6547870148c")
+;;;### (autoloads nil "ox" "ox.el" "78299bd1ecc095f35b64d541cdab627b")
 ;;; Generated autoloads from ox.el
 
 (autoload 'org-export-as "ox" "\
@@ -2404,7 +2404,7 @@ Return output file name.
 ;;;### (autoloads (org-beamer-publish-to-pdf org-beamer-publish-to-latex
 ;;;;;;  org-beamer-insert-options-template org-beamer-select-environment
 ;;;;;;  org-beamer-export-to-pdf org-beamer-export-to-latex org-beamer-export-as-latex
-;;;;;;  org-beamer-mode) "ox-beamer" "ox-beamer.el" "6e708817388023e1e1df3de8f27188ce")
+;;;;;;  org-beamer-mode) "ox-beamer" "ox-beamer.el" "bb0ba558b851a54fc6394a24106c4bb4")
 ;;; Generated autoloads from ox-beamer.el
 
 (autoload 'org-beamer-mode "ox-beamer" "\
@@ -3031,7 +3031,7 @@ Return output file name.
 
 ;;;### (autoloads (org-publish-current-project org-publish-current-file
 ;;;;;;  org-publish-all org-publish) "ox-publish" "ox-publish.el"
-;;;;;;  "e9f7e2ede20ea11ead21108abf19db90")
+;;;;;;  "20cfd65a07e6275687d28df1d264b407")
 ;;; Generated autoloads from ox-publish.el
 
 (defalias 'org-publish-project 'org-publish)
@@ -3101,7 +3101,7 @@ this command to convert it.
 
 ;;;### (autoloads (org-export-dispatch org-export-to-file org-export-to-buffer
 ;;;;;;  org-export-insert-default-template org-export-replace-region-by
-;;;;;;  org-export-string-as org-export-as) "ox" "ox.el" "abbaf953c164e76b9957d5ea22f805c8")
+;;;;;;  org-export-string-as org-export-as) "ox" "ox.el" "a3f90141f011b5f549828135c723de85")
 ;;; Generated autoloads from ox.el
 
 (autoload 'org-export-as "ox" "\

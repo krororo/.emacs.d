@@ -7399,8 +7399,14 @@ or nil."
 
 (defvar org-goto-local-auto-isearch-map (make-sparse-keymap))
 (set-keymap-parent org-goto-local-auto-isearch-map isearch-mode-map)
-(define-key org-goto-local-auto-isearch-map "\C-i" 'isearch-other-control-char)
-(define-key org-goto-local-auto-isearch-map "\C-m" 'isearch-other-control-char)
+;; `isearch-other-control-char' was removed in Emacs 24.4.
+(if (fboundp 'isearch-other-control-char)
+    (progn
+      (define-key org-goto-local-auto-isearch-map "\C-i" 'isearch-other-control-char)
+      (define-key org-goto-local-auto-isearch-map "\C-m" 'isearch-other-control-char))
+  (define-key org-goto-local-auto-isearch-map "\C-i" nil)
+  (define-key org-goto-local-auto-isearch-map "\C-m" nil)
+  (define-key org-goto-local-auto-isearch-map [return] nil))
 
 (defun org-goto-local-search-headings (string bound noerror)
   "Search and make sure that any matches are in headlines."
@@ -7615,9 +7621,7 @@ command."
 	       (insert "\n* ")))
       (run-hooks 'org-insert-heading-hook))
 
-     ((and itemp (not (member arg '((4) (16)))))
-      ;; Insert an item
-      (org-insert-item))
+     ((and itemp (not (member arg '((4) (16)))) (org-insert-item)))
 
      (t
       ;; Maybe move at the end of the subtree
