@@ -3,8 +3,8 @@
 ;;; Code:
 (add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads nil "rspec-mode" "rspec-mode.el" (21592 7068 530502
-;;;;;;  640000))
+;;;### (autoloads nil "rspec-mode" "rspec-mode.el" (21620 26281 957706
+;;;;;;  986000))
 ;;; Generated autoloads from rspec-mode.el
 
 (autoload 'rspec-mode "rspec-mode" "\
@@ -44,8 +44,8 @@ Returns true if the current buffer is a spec
 
 ;;;***
 
-;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21592 7068 629761
-;;;;;;  522000))
+;;;### (autoloads nil nil ("rspec-mode-pkg.el") (21620 26282 4178
+;;;;;;  856000))
 
 ;;;***
 

@@ -202,6 +202,11 @@ there's an `include FactoryGirl::Syntax::Methods' statement in spec_helper."
           (const concise)
           (const nil))
   :group 'rspec-mode)
+  
+(defcustom rspec-auto-scroll t
+  "Auto scroll the output"
+  :type 'boolean
+  :group 'rspec-mode)
 
 ;;;###autoload
 (define-minor-mode rspec-mode
@@ -396,20 +401,20 @@ target, otherwise the spec."
                       (save-excursion
                         (end-of-line)
                         (or
-                         (re-search-backward "\\(?:describe\\|context\\) ['\"][#\\.]\\(.*\\)['\"] do" nil t)
+                         (re-search-backward "\\(?:describe\\|context\\) ['\"][#\\.]\\([a-zA-Z_?!]*\\)['\"] do" nil t)
                          (error "No method spec before point"))
                         (match-string 1)))
        (get-method-name ()
                         (save-excursion
                           (end-of-line)
                           (or
-                           (re-search-backward "def \\(?:self\\)?\\(.?[_a-zA-Z]+\\)" nil t)
+                           (re-search-backward "def \\(?:self\\)?\\(.?[a-zA-Z_?!]+\\)" nil t)
                            (error "No method definition before point"))
                           (match-string 1))))
     (let* ((spec-p (rspec-buffer-is-spec-p))
            (target-regexp (if spec-p
-                              (format "def \\(self\\)?\\.?%s" (get-spec-name))
-                            (format "\\(describe\\|context\\) ['\"]#?%s['\"]" (get-method-name)))))
+                              (format "def \\(self\\)?\\.?%s" (regexp-quote (get-spec-name)))
+                            (format "\\(describe\\|context\\) ['\"]#?%s['\"]" (regexp-quote (get-method-name))))))
       (funcall toggle-function)
       (if (string-match-p target-regexp (buffer-string))
           (progn
@@ -660,7 +665,7 @@ or a cons (FILE . LINE), to run one example."
       (rvm-activate-corresponding-ruby))
 
   (let ((default-directory (or (rspec-project-root) default-directory))
-        (compilation-scroll-output t))
+        (compilation-scroll-output rspec-auto-scroll))
     (compile (mapconcat 'identity `(,(rspec-runner)
                                     ,(rspec-runner-options opts)
                                     ,target) " ")
