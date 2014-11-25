@@ -2,7 +2,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 
 ;; Authors: Akihisa <akihisa@mail.ne.jp>
-;; Version: 20140925.454
+;; Version: 20141108.1730
 ;; X-Original-Version: 2.71
 ;; Package-version: 2.71
 ;; Keywords: convenience
@@ -977,8 +977,7 @@ Argument BUF2 BUFFER."
 (defun moccur-kill-buffer-func ()
   (when (get-buffer "*Moccur*") ;; there ought to be just one of these
     (let ((cur-buffer (current-buffer)))
-      (save-excursion
-        (set-buffer "*Moccur*")
+      (with-current-buffer (get-buffer "*Moccur*")
         ;; remove current buffer from moccur-grep-buffer-list so it won't get killed in
         ;; moccur-grep-sync-kill-buffers
         (setq moccur-grep-buffer-list (remq cur-buffer moccur-grep-buffer-list))))
@@ -1267,10 +1266,10 @@ Optional argument LENGTH
 
   (switch-to-buffer-other-window
    (get-buffer moccur-buffer-name))
-  (goto-line (string-to-number moccur-line))
+  (forward-line (string-to-number moccur-line))
   (if (re-search-forward moccur-regexp-color (line-end-position) t)
       ()
-    (goto-line (string-to-number moccur-line)))
+    (forward-line (string-to-number moccur-line)))
 
   ;; color
   (moccur-color-current-line)
@@ -1437,8 +1436,8 @@ If NAME exists, `moccur-search-buffer' works as grep."
             match-str))
           (forward-line nil))))
     (setq match-str (reverse match-str))
-    (save-excursion
-      (set-buffer moccur-mocur-buffer)
+    (with-current-buffer
+      (get-buffer moccur-mocur-buffer)
       (if (not match-str)
           nil
         (let (pt)
@@ -1535,8 +1534,8 @@ If ARG is non-nil, also search buffer that doesn't have file name"
         ;; illegal buffer
         (setq buffers (cdr buffers))))
     (if (> moccur-matches 0)
-        (save-excursion
-          (set-buffer moccur-mocur-buffer)
+        (with-current-buffer
+          (get-buffer moccur-mocur-buffer)
           (delete-other-windows)
           (moccur-mode)
           ;; highlight Moccur buffer
@@ -2135,7 +2134,7 @@ It serves as a menu to find any of the occurrences in this buffer.
        (t
         (find-file-other-window file)))
       (widen)
-      (goto-line line))))
+      (forward-line line))))
 
 (defun moccur-grep-read-directory ()
   (let ((dir default-directory))
@@ -2771,14 +2770,11 @@ It serves as a menu to find any of the occurrences in this buffer.
     (define-key map "<" 'moccur-file-beginning-of-buffer)
     (define-key map ">" 'moccur-file-end-of-buffer)
 
-    (condition-case nil
-        (progn
-          (require 'moccur-edit)
+    (unless (featurep 'moccur-edit)
+      (when (require 'moccur-edit nil t)
           (define-key map "r" 'moccur-edit-mode-in)
           (define-key map "\C-x\C-q" 'moccur-edit-mode-in)
-          (define-key map "\C-c\C-i" 'moccur-edit-mode-in))
-      (error
-       nil))
+          (define-key map "\C-c\C-i" 'moccur-edit-mode-in)))
     map))
 
 (if moccur-mode-map
@@ -2854,8 +2850,8 @@ It serves as a menu to find any of the occurrences in this buffer.
 (defun moccur-narrow-down-get-targets (target-regexp target-type)
   (let ((case-fold-search t)
         (targets nil) target-name)
-    (save-excursion
-      (set-buffer (get-buffer "*Moccur*"))
+    (with-current-buffer
+       (get-buffer "*Moccur*")
       (goto-char (point-min))
       (while (re-search-forward target-regexp nil t)
         (setq target-name (buffer-substring-no-properties
@@ -2936,7 +2932,7 @@ It serves as a menu to find any of the occurrences in this buffer.
               (message "selecting <%s>" line))
             (pop-to-buffer dstbuf)
             (if lineno
-                (goto-line lineno))
+                (forward-line lineno))
             (if moccur-kill-buffer-after-goto
                 (moccur-kill-buffer nil))
             (delete-other-windows))))))
@@ -3137,7 +3133,7 @@ It serves as a menu to find any of the occurrences in this buffer.
            (string-match "ee" (buffer-name (current-buffer))))
       (moccur-switch-buffer 'ee)
     (moccur-switch-buffer 'normal))
-  (goto-line line))
+  (forward-line line))
 
 (defun moccur-mode-kill-ee ()
   (when (and (string-match "ee" (buffer-name (current-buffer)))
@@ -3616,8 +3612,8 @@ on all visited files."
                   (let* ((linenum (count-lines (point-min)(point)))
                          (tag (format "\n%3d " linenum))
                          fname)
-                    (save-excursion
-                      (set-buffer occbuf)
+                    (with-current-buffer
+                      (get-buffer occbuf)
                       (if (buffer-file-name currbuf)
                           (setq fname (buffer-file-name currbuf))
                         (setq fname "Not file"))

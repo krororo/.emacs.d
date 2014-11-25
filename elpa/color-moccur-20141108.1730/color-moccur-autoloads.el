@@ -3,8 +3,8 @@
 ;;; Code:
 (add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads nil "color-moccur" "color-moccur.el" (21592 7105
-;;;;;;  38949 863000))
+;;;### (autoloads nil "color-moccur" "color-moccur.el" (21620 26311
+;;;;;;  866084 324000))
 ;;; Generated autoloads from color-moccur.el
 
 (autoload 'occur-by-moccur "color-moccur" "\
