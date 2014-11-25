@@ -41,6 +41,7 @@
  '(recentf-mode t)
  '(rspec-spec-command "rspec -c")
  '(rspec-use-rake-when-possible nil)
+ '(ruby-deep-arglist nil)
  '(ruby-deep-indent-paren-style nil)
  '(ruby-insert-encoding-magic-comment nil)
  '(yas-prompt-functions (quote (my-yas/prompt))))
