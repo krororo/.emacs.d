@@ -2,7 +2,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 
 ;; Authors: Akihisa <akihisa@mail.ne.jp>
-;; Version: 20141108.1730
+;; Version: 20141222.1635
 ;; X-Original-Version: 2.71
 ;; Package-version: 2.71
 ;; Keywords: convenience
@@ -1263,13 +1263,14 @@ Optional argument LENGTH
           (delete-overlay moccur-current-line-overlays)
           (setq moccur-overlays nil)))
     (moccur-color-view))
-
   (switch-to-buffer-other-window
    (get-buffer moccur-buffer-name))
-  (forward-line (string-to-number moccur-line))
+  (goto-char (point-min))
+  (forward-line (1- (string-to-number moccur-line)))
   (if (re-search-forward moccur-regexp-color (line-end-position) t)
       ()
-    (forward-line (string-to-number moccur-line)))
+    (goto-char (point-min))
+    (forward-line (1- (string-to-number moccur-line))))
 
   ;; color
   (moccur-color-current-line)
@@ -2134,7 +2135,8 @@ It serves as a menu to find any of the occurrences in this buffer.
        (t
         (find-file-other-window file)))
       (widen)
-      (forward-line line))))
+      (goto-char (point-min))
+      (forward-line (1- line)))))
 
 (defun moccur-grep-read-directory ()
   (let ((dir default-directory))
@@ -2925,17 +2927,17 @@ It serves as a menu to find any of the occurrences in this buffer.
                         (message "buffer: <%s> doesn't exist anymore" line)))
                 (error "What did you do with the header?!")))
           (error "This is no occurrence line!")))
-      (if dstbuf
-          (progn
+      (when dstbuf
             (if lineno
                 (message "selecting <%s> line %d" line lineno)
               (message "selecting <%s>" line))
             (pop-to-buffer dstbuf)
-            (if lineno
-                (forward-line lineno))
-            (if moccur-kill-buffer-after-goto
+            (when lineno
+                (goto-char (point-min))
+              (forward-line (1- lineno)))
+            (when moccur-kill-buffer-after-goto
                 (moccur-kill-buffer nil))
-            (delete-other-windows))))))
+            (delete-other-windows)))))
 
 (defun moccur-toggle-buffer ()
   (interactive)
@@ -3133,7 +3135,8 @@ It serves as a menu to find any of the occurrences in this buffer.
            (string-match "ee" (buffer-name (current-buffer))))
       (moccur-switch-buffer 'ee)
     (moccur-switch-buffer 'normal))
-  (forward-line line))
+  (goto-char (point-min))
+(forward-line (1- line)))
 
 (defun moccur-mode-kill-ee ()
   (when (and (string-match "ee" (buffer-name (current-buffer)))
