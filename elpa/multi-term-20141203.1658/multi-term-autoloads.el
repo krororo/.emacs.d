@@ -1,12 +1,10 @@
 ;;; multi-term-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
+(add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads (multi-term-dedicated-select multi-term-dedicated-toggle
-;;;;;;  multi-term-dedicated-open multi-term-prev multi-term-next
-;;;;;;  multi-term) "multi-term" "multi-term.el" (21531 37712 537535
-;;;;;;  997000))
+;;;### (autoloads nil "multi-term" "multi-term.el" (21692 23839 156994
+;;;;;;  151000))
 ;;; Generated autoloads from multi-term.el
 
 (autoload 'multi-term "multi-term" "\
@@ -45,16 +43,9 @@ Select the `multi-term' dedicated window.
 
 ;;;***
 
-;;;### (autoloads nil nil ("multi-term-pkg.el") (21531 37712 545498
-;;;;;;  335000))
-
-;;;***
-
-(provide 'multi-term-autoloads)
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; multi-term-autoloads.el ends here
