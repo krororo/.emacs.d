@@ -3,8 +3,8 @@
 ;;; Code:
 (add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads nil "haml-mode" "haml-mode.el" (21620 26730 87403
-;;;;;;  553000))
+;;;### (autoloads nil "haml-mode" "haml-mode.el" (21692 23850 333135
+;;;;;;  743000))
 ;;; Generated autoloads from haml-mode.el
 
 (autoload 'haml-mode "haml-mode" "\
