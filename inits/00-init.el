@@ -18,6 +18,8 @@
 (setq-default show-trailing-whitespace t)
 ;; 対応する括弧をハイライト
 (show-paren-mode t)
+;; スクロールバーを右に
+(set-scroll-bar-mode 'right)
 ;;全角スペースとかに色を付ける
 (defface my-face-b-1 '((t (:background "medium aquamarine"))) nil)
 (defface my-face-b-2 '((t (:background "#044"))) nil)
