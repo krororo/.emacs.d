@@ -154,6 +154,7 @@
 
 (defvar review-mode-comment-face 'review-mode-comment-face)
 (defvar review-mode-title-face 'review-mode-title-face)
+(defvar review-mode-column-face 'review-mode-column-face)
 (defvar review-mode-header1-face 'review-mode-header1-face)
 (defvar review-mode-header2-face 'review-mode-header2-face)
 (defvar review-mode-header3-face 'review-mode-header3-face)
@@ -193,6 +194,11 @@
 (defface review-mode-title-face
   '((t (:bold t :foreground "darkgreen")))
   "タイトルのフェイス"
+  :group 'review-faces)
+
+(defface review-mode-column-face
+  '((t (:bold t :foreground "cyan")))
+  "コラムのフェイス"
   :group 'review-faces)
 
 (defface review-mode-header1-face
@@ -331,6 +337,7 @@
     ("^=== .*" . review-mode-header2-face)
     ("^== .*" . review-mode-header1-face)
     ("^= .*" . review-mode-title-face)
+    ("^=\\{1,5\\}\\[column\\] .*" . review-mode-column-face)
     ("@<list>{.*?}" . review-mode-ref-face)
     ("@<img>{.*?}" . review-mode-ref-face)
     ("@<table>{.*?}" . review-mode-ref-face)
