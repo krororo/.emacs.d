@@ -1,10 +1,10 @@
 ;;; rspec-mode.el --- Enhance ruby-mode for RSpec
 
-;; Copyright (C) 2008-2014 Peter Williams <http://barelyenough.org> and others
+;; Copyright (C) 2008-2015 Peter Williams <http://barelyenough.org> and others
 ;; Author: Peter Williams, et al.
 ;; URL: http://github.com/pezra/rspec-mode
 ;; Created: 2011
-;; Version: 1.11
+;; Version: 1.13
 ;; Keywords: rspec ruby
 ;; Package-Requires: ((ruby-mode "1.0") (cl-lib "0.4"))
 
@@ -25,34 +25,9 @@
 
 ;;; Commentary:
 ;;
-;; This minor mode provides some enhancements to ruby-mode in
-;; the contexts of RSpec specifications.  Namely, it provides the
-;; following capabilities:
-;;
-;;  * toggle back and forth between a spec and it's target (bound to
-;;    `\C-c ,t`)
-;;
-;;  * verify the spec file associated with the current buffer (bound to `\C-c ,v`)
-;;
-;;  * verify the spec defined in the current buffer if it is a spec
-;;    file (bound to `\C-c ,v`)
-;;
-;;  * verify the example defined at the point of the current buffer (bound to `\C-c ,s`)
-;;
-;;  * re-run the last verification process (bound to `\C-c ,r`)
-;;
-;;  * toggle the pendingness of the example at the point (bound to
-;;    `\C-c ,d`)
-;;
-;;  * disable the example at the point by making it pending
-;;
-;;  * reenable the disabled example at the point
-;;
-;;  * run all specs related to the current buffer (`\C-c ,m`)
-;;
-;;  * run the current spec and all after it (`\C-c ,c`)
-;;
-;;  * run spec for entire project (bound to `\C-c ,a`)
+;; This minor mode provides some enhancements to ruby-mode in the
+;; contexts of RSpec specifications.  Refer to the README for a
+;; summary of keybindings and their descriptions.
 ;;
 ;; You can choose whether to run specs using 'rake spec' or the 'spec'
 ;; command. Use the customization interface (customize-group
@@ -76,6 +51,7 @@
 ;;
 ;;; Change Log:
 ;;
+;; 1.12 - Run specs for single method (Renan Ranelli)
 ;; 1.11 - Switching between method, its specs and back (Renan Ranelli)
 ;; 1.9 - Support for RSpec 3.
 ;; 1.8 - Support for Capybara's acceptance test DSL (Ales Guzik)
@@ -121,6 +97,8 @@
 (define-key rspec-verifiable-mode-keymap (kbd "r") 'rspec-rerun)
 (define-key rspec-verifiable-mode-keymap (kbd "m") 'rspec-verify-matching)
 (define-key rspec-verifiable-mode-keymap (kbd "c") 'rspec-verify-continue)
+(define-key rspec-verifiable-mode-keymap (kbd "s") 'rspec-verify-method)
+(define-key rspec-verifiable-mode-keymap (kbd "f") 'rspec-run-last-failed)
 
 (set-keymap-parent rspec-mode-keymap rspec-verifiable-mode-keymap)
 
@@ -148,12 +126,12 @@
   'rspec-use-rake-when-possible "1.7")
 
 (defcustom rspec-rake-command "rake"
-  "The command for rake"
+  "The command for rake."
   :type 'string
   :group 'rspec-mode)
 
 (defcustom rspec-spec-command "rspec"
-  "The command for spec"
+  "The command for spec."
   :type 'string
   :group 'rspec-mode)
 
@@ -184,12 +162,12 @@ Not used when running specs using Zeus or Spring."
   :group 'rspec-mode)
 
 (defcustom rspec-key-command-prefix  (kbd "C-c ,")
-  "The prefix for all rspec related key commands"
+  "The prefix for all rspec related key commands."
   :type 'string
   :group 'rspec-mode)
 
 (defcustom rspec-command-options "--format documentation"
-  "Default options used with rspec-command"
+  "Default options used with rspec-command."
   :type 'string
   :group 'rspec-mode)
 
@@ -212,6 +190,20 @@ info, are considered errors."
   :type '(choice (const :tag "Skip warnings and info" 2)
                  (const :tag "Skip info" 1)
                  (const :tag "No skip" 0))
+  :group 'rspec-mode)
+
+(defcustom rspec-expose-dsl-globally nil
+  "Defines whether the RSpec DSL is assumed to be exposed
+  globally, and so prepend snippets at the top level with
+  'RSpec.'."
+  :type 'boolean
+  :group 'rspec-mode)
+
+(defcustom rspec-primary-source-dirs '("app" "lib")
+  "List of directories whose names should be omitted when looking
+for spec files corresponding to files inside them."
+  :type '(repeat string)
+  :safe 'listp
   :group 'rspec-mode)
 
 ;;;###autoload
@@ -307,21 +299,21 @@ info, are considered errors."
        (point)))))
 
 (defun rspec-example-pending-p ()
-  "True if the example under point is pending. Otherwise false"
+  "True if the example under point is pending. Otherwise false."
   (interactive)
   (save-excursion
     (rspec-beginning-of-example)
     (re-search-forward "^[[:space:]]*pending\\([[:space:](]\\|$\\)" (save-excursion (ruby-end-of-block) (point)) t)))
 
 (defun rspec-toggle-example-pendingness ()
-  "Disables active examples and enables pending examples."
+  "Disable active examples and enables pending examples."
   (interactive)
   (if (rspec-example-pending-p)
       (rspec-enable-example)
     (rspec-disable-example)))
 
 (defun rspec-disable-example ()
-  "Disable the example in which the point is located"
+  "Disable the example at point."
   (interactive)
   (when (not (rspec-example-pending-p))
     (save-excursion
@@ -331,7 +323,7 @@ info, are considered errors."
       (indent-for-tab-command))))
 
 (defun rspec-enable-example ()
-  "Enable the example in which the point is located"
+  "Enable the example at point."
   (interactive)
   (when (rspec-example-pending-p)
     (save-excursion
@@ -343,19 +335,24 @@ info, are considered errors."
                      (save-excursion (forward-line 1) (point))))))
 
 (defun rspec-verify ()
-  "Runs the specified spec, or the spec file for the current buffer."
+  "Run the specified spec, or the spec file for the current buffer."
   (interactive)
   (rspec-run-single-file (rspec-spec-file-for (buffer-file-name))
                          (rspec-core-options)))
 
 (defun rspec-verify-matching ()
-  "Runs the specs related to the current buffer. This is more fuzzy that a simple verify."
+  "Run the specs related to the current buffer. This is more fuzzy that a simple verify."
   (interactive)
   (rspec-run-multiple-files (rspec-all-related-spec-files (buffer-file-name))
                             (rspec-core-options)))
 
+(defun rspec-run-last-failed ()
+  "Run just the specs that failed during the last invocation."
+  (interactive)
+  (rspec-run-multiple-files rspec-last-failed-specs (rspec-core-options)))
+
 (defun rspec-verify-continue ()
-  "Runs the current spec file and the spec files located after it.
+  "Run the current spec file and the spec files located after it.
 This is most useful in combination with the option `--fail-fast',
 in long-running test suites."
   (interactive)
@@ -368,7 +365,7 @@ in long-running test suites."
      (rspec-core-options))))
 
 (defun rspec-verify-single ()
-  "Runs the specified example at the point of the current buffer."
+  "Run the specified example at point."
   (interactive)
   (rspec-run-single-file
    (cons
@@ -379,27 +376,36 @@ in long-running test suites."
    (rspec-core-options)))
 
 (defun rspec-dired-verify ()
-  "Runs all specs in the current directory."
+  "Run all specs in the current directory."
   (interactive)
   (rspec-run-single-file (dired-current-directory) (rspec-core-options)))
 
 (defun rspec-dired-verify-single ()
-  "Runs marked specs or spec at point (works with directories too)."
+  "Run marked specs or spec at point (works with directories too)."
   (interactive)
   (rspec-compile (rspec-runner-target (dired-get-marked-files))
                  (rspec-core-options)))
 
 (defun rspec-verify-all ()
-  "Runs the 'spec' rake task for the project of the current file."
+  "Run the 'spec' rake task for the project of the current file."
   (interactive)
   (rspec-run (rspec-core-options)))
 
 (defun rspec-toggle-spec-and-target ()
-  "Switches to the spec or the target file for the current buffer.
+  "Switch to the spec or the target file for the current buffer.
 If the current buffer is visiting a spec file, switches to the
 target, otherwise the spec."
   (interactive)
   (find-file (rspec-spec-or-target)))
+
+(defun rspec-verify-method ()
+  "Just like `rspec-verify-single' but tries to find examples for
+the method at point."
+  (interactive)
+  (save-excursion
+    (when (rspec--toggle-spec-and-target-find-method
+           (lambda () (set-buffer (find-file-noselect (rspec-spec-or-target)))))
+      (rspec-verify-single))))
 
 (defun rspec--toggle-spec-and-target-find-method (toggle-function)
   (cl-labels
@@ -424,27 +430,27 @@ target, otherwise the spec."
       (funcall toggle-function)
       (if (string-match-p target-regexp (buffer-string))
           (progn
-            (beginning-of-buffer)
+            (goto-char (point-min))
             (re-search-forward target-regexp))
-        (message "No matching %s" (if spec-p "method" "spec"))))))
+        (message "No matching %s" (if spec-p "method" "spec"))
+        nil))))
 
 (defun rspec-toggle-spec-and-target-find-example ()
-  "Just like rspec-toggle-spec-and-target but tries to toggle between
-the specific example and method given the current point."
+  "Just like `rspec-toggle-spec-and-target' but tries to toggle between
+the method and its corresponding examples."
   (interactive)
   (rspec--toggle-spec-and-target-find-method 'rspec-toggle-spec-and-target))
 
 (defun rspec-find-spec-or-target-other-window ()
-  "Finds in the other window the spec or the target file.
+  "Find in the other window the spec or the target file.
 If the current buffer is visiting a spec file, finds the target,
 otherwise the spec."
   (interactive)
   (find-file-other-window (rspec-spec-or-target)))
 
 (defun rspec-find-spec-or-target-find-example-other-window ()
-  "Finds in the other window the spec or the target file, and tries
-  to find the corresponding example or method given the current
-  point."
+  "Find in the other window the spec or the target file, and try
+to navigate to the example or method corresponding to point."
   (interactive)
   (rspec--toggle-spec-and-target-find-method 'rspec-find-spec-or-target-other-window))
 
@@ -453,63 +459,63 @@ otherwise the spec."
       (rspec-target-file-for (buffer-file-name))
     (rspec-spec-file-for (buffer-file-name))))
 
-(defun rspec-spec-directory-has-lib? (a-file-name)
-  (file-directory-p (concat (rspec-spec-directory a-file-name) "/lib")))
-
 (defun rspec-spec-file-for (a-file-name)
-  "Find spec for the specified file"
+  "Find spec for the specified file."
   (if (rspec-spec-file-p a-file-name)
       a-file-name
-    (let ((replace-regex (if (and (rspec-target-lib-file-p a-file-name) (rspec-spec-directory-has-lib? a-file-name))
-                             "^\\.\\./"
-                           "^\\.\\./[^/]+/"))
+    (let ((replace-regex (if (rspec-target-in-holder-dir-p a-file-name)
+                             "^\\.\\./[^/]+/"
+                           "^\\.\\./"))
           (relative-file-name (file-relative-name a-file-name (rspec-spec-directory a-file-name))))
       (rspec-specize-file-name (expand-file-name (replace-regexp-in-string replace-regex "" relative-file-name)
                                                  (rspec-spec-directory a-file-name))))))
 
-(defun rspec-spec-lib-file-p (a-spec-file-name)
-  (string-match (concat "^" (expand-file-name (regexp-quote (concat (rspec-spec-directory a-spec-file-name) "/lib")))) a-spec-file-name))
-
-(defun rspec-target-lib-file-p (a-file-name)
-  (string-match (concat "^" (expand-file-name (regexp-quote (concat (rspec-project-root a-file-name) "/lib")))) a-file-name))
+(defun rspec-target-in-holder-dir-p (a-file-name)
+  (string-match (concat "^" (concat
+                             (regexp-quote
+                              (rspec-project-root a-file-name))
+                             (regexp-opt rspec-primary-source-dirs)
+                             "/"))
+                a-file-name))
 
 (defun rspec-target-file-for (a-spec-file-name)
-  "Find the target for a-spec-file-name"
-  (car
-   (file-expand-wildcards
-    (replace-regexp-in-string
-     "/spec/"
-     (if (rspec-spec-lib-file-p a-spec-file-name) "/" "/*/")
-     (rspec-targetize-file-name a-spec-file-name)))))
+  "Find the target for A-SPEC-FILE-NAME."
+  (cl-loop for dir in (cons "." rspec-primary-source-dirs)
+           for target = (replace-regexp-in-string
+                         "/spec/"
+                         (concat "/" dir "/")
+                         (rspec-targetize-file-name a-spec-file-name))
+           if (file-exists-p target)
+           return target))
 
 (defun rspec-specize-file-name (a-file-name)
-  "Returns a-file-name but converted in to a spec file name"
+  "Return A-FILE-NAME but converted in to a spec file name."
   (concat
    (file-name-directory a-file-name)
    (replace-regexp-in-string "\\(\\.rb\\)?$" "_spec.rb" (file-name-nondirectory a-file-name))))
 
 (defun rspec-targetize-file-name (a-file-name)
-  "Returns a-file-name but converted into a non-spec file name"
+  "Return A-FILE-NAME but converted into a non-spec file name."
   (concat (file-name-directory a-file-name)
           (rspec-file-name-with-default-extension
            (replace-regexp-in-string "_spec\\.rb" "" (file-name-nondirectory a-file-name)))))
 
 (defun rspec-file-name-with-default-extension (a-file-name)
-  "Adds .rb file extension to a-file-name if it does not already have an extension"
+  "Add .rb file extension to A-FILE-NAME if it does not already have an extension."
   (if (file-name-extension a-file-name)
       a-file-name ;; file has a extension already so do nothing
     (concat a-file-name ".rb")))
 
 (defun rspec-parent-directory (a-directory)
-  "Returns the directory of which a-directory is a child"
+  "Returns the directory of which A-DIRECTORY is a child"
   (file-name-directory (directory-file-name a-directory)))
 
 (defun rspec-root-directory-p (a-directory)
-  "Returns t if a-directory is the root"
+  "Return t if A-DIRECTORY is the root."
   (equal a-directory (rspec-parent-directory a-directory)))
 
 (defun rspec-spec-directory (a-file)
-  "Returns the nearest spec directory that could contain specs for a-file"
+  "Return the nearest spec directory that could contain specs for A-FILE."
   (if (file-directory-p a-file)
       (or
        (car (directory-files a-file t "^spec$"))
@@ -545,12 +551,12 @@ otherwise the spec."
                 'string-lessp)))
 
 (defun rspec-spec-file-p (a-file-name)
-  "Returns true if the specified file is a spec"
+  "Return true if the specified A-FILE-NAME is a spec."
   (numberp (string-match rspec-spec-file-name-re a-file-name)))
 
 (defun rspec-core-options ()
-  "Returns string of options that instructs spec to use options
-file if it exists, or sensible defaults otherwise"
+  "Return string of options that instructs spec to use options
+file if it exists, or sensible defaults otherwise."
   (cond ((and rspec-use-opts-file-when-available
               (file-readable-p (rspec-spec-opts-file)))
          (concat "--options " (shell-quote-argument (rspec-spec-opts-file))))
@@ -560,9 +566,13 @@ file if it exists, or sensible defaults otherwise"
   (and rspec-use-bundler-when-possible
        (file-readable-p (concat (rspec-project-root) "Gemfile"))))
 
+(defun rspec-zeus-file-path ()
+  (or (getenv "ZEUSSOCK")
+      (concat (rspec-project-root) ".zeus.sock")))
+
 (defun rspec-zeus-p ()
   (and rspec-use-zeus-when-possible
-       (file-exists-p (concat (rspec-project-root) ".zeus.sock"))))
+       (file-exists-p (rspec-zeus-file-path))))
 
 (defun rspec-rake-p ()
   (and rspec-use-rake-when-possible
@@ -589,13 +599,13 @@ file if it exists, or sensible defaults otherwise"
       (file-readable-p (concat (rspec-project-root) ".rspec"))))
 
 (defun rspec-spec-opts-file ()
-  "Returns filename of spec opts file"
+  "Return filename of spec opts file."
   (if (rspec2-p)
       (expand-file-name ".rspec" (rspec-project-root))
     (expand-file-name "spec.opts" (rspec-spec-directory (rspec-project-root)))))
 
 (defun rspec-runner ()
-  "Returns command line to run rspec"
+  "Return command line to run rspec."
   (let ((bundle-command (if (rspec-bundle-p) "bundle exec " ""))
         (zeus-command (if (rspec-zeus-p) "zeus " nil))
         (spring-command (if (rspec-spring-p) "spring " nil)))
@@ -605,7 +615,7 @@ file if it exists, or sensible defaults otherwise"
               rspec-spec-command))))
 
 (defun rspec-runner-options (&optional opts)
-  "Returns string of options for command line"
+  "Return string of options from OPTS for command line."
   (let ((opts (if (listp opts)
                   opts
                 (list opts)))
@@ -631,25 +641,28 @@ or a cons (FILE . LINE), to run one example."
 
 ;;;###autoload
 (defun rspec-buffer-is-spec-p ()
-  "Returns true if the current buffer is a spec"
+  "Return true if the current buffer is a spec."
   (and (buffer-file-name)
        (rspec-spec-file-p (buffer-file-name))))
 
 (defun rspec-run (&optional opts)
-  "Runs spec with the specified options"
+  "Run spec with the specified options OPTS."
   (rspec-compile (rspec-runner-target
                   (rspec-spec-directory (rspec-project-root)))
                  opts))
 
 (defun rspec-run-single-file (spec-file &rest opts)
-  "Runs spec on a file with the specified options"
+  "Run spec on SPEC-FILE with the specified options OPTS."
   (rspec-compile (rspec-runner-target spec-file) opts))
 
 (defun rspec-run-multiple-files (spec-files &rest opts)
-  "Runs spec on a list of files with the specified options"
+  "Run spec on a list of SPEC-FILES with the specified options OPTS."
   (if (null spec-files)
       (message "No spec files found!")
     (rspec-compile (rspec-runner-target spec-files) opts)))
+
+(defvar rspec-last-failed-specs nil
+  "The file and line number of the specs that failed during the last run.")
 
 (defvar rspec-last-directory nil
   "Directory the last spec process ran in.")
@@ -666,7 +679,7 @@ or a cons (FILE . LINE), to run one example."
       (apply #'rspec-compile rspec-last-arguments))))
 
 (defun rspec-compile (target &optional opts)
-  "Runs a compile for TARGET with the specified options."
+  "Run a compile for TARGET with the specified options OPTS."
   (setq rspec-last-directory default-directory
         rspec-last-arguments (list target opts))
 
@@ -701,7 +714,17 @@ or a cons (FILE . LINE), to run one example."
 (define-compilation-mode rspec-compilation-mode "RSpec Compilation"
   "Compilation mode for RSpec output."
   (add-hook 'compilation-filter-hook 'rspec-colorize-compilation-buffer nil t)
+  (add-hook 'compilation-finish-functions 'rspec-store-failures nil t)
   (add-hook 'compilation-finish-functions 'rspec-handle-error nil t))
+
+(defun rspec-store-failures (&rest ignore)
+  "Store the file and line number of the failed examples from this run."
+  (let (failures)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^rspec \\([0-9A-Za-z@_./:-]+\\.rb:[0-9]+\\)" nil t)
+        (push (match-string-no-properties 1) failures)))
+    (setq rspec-last-failed-specs (reverse failures))))
 
 (defun rspec-colorize-compilation-buffer ()
   (toggle-read-only)
@@ -735,15 +758,21 @@ or a cons (FILE . LINE), to run one example."
           (t (rspec-project-root (file-name-directory (directory-file-name directory)))))))
 
 (defun rspec--include-fg-syntax-methods-p ()
-  "Check whether FactoryGirl::Syntax::Methods is included in spec_helper."
+  "Check whether FactoryGirl::Syntax::Methods is included in rails_helper or spec_helper."
   (cl-case rspec-snippets-fg-syntax
     (full nil)
     (concise t)
     (t
-     (with-temp-buffer
-       (insert-file-contents
-        (concat (rspec-project-root) "spec/spec_helper.rb"))
-       (re-search-forward "include +FactoryGirl::Syntax::Methods" nil t)))))
+     (cl-find-if
+      (lambda (path)
+        (let ((expanded-path (expand-file-name path (rspec-project-root))))
+          (when (file-exists-p expanded-path)
+            (with-temp-buffer
+              (insert-file-contents expanded-path)
+              (ruby-mode)
+              (when (re-search-forward "include +FactoryGirl::Syntax::Methods" nil t)
+                (not (nth 4 (syntax-ppss))))))))
+      '("spec/rails_helper.rb" "spec/spec_helper.rb")))))
 
 (defun rspec-snippets-fg-method-call (method)
   "Return FactoryGirl method call for METHOD, for use in snippets.
