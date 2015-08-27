@@ -1,18 +1,15 @@
 ;;; migemo-autoloads.el --- automatically extracted autoloads
 ;;
 ;;; Code:
-
+(add-to-list 'load-path (or (file-name-directory #$) (car load-path)))
 
-;;;### (autoloads nil nil ("migemo-pkg.el" "migemo.el") (21531 37713
-;;;;;;  594919 612000))
+;;;### (autoloads nil nil ("migemo.el") (21982 19236 772253 472000))
 
 ;;;***
 
-(provide 'migemo-autoloads)
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
 ;; End:
 ;;; migemo-autoloads.el ends here

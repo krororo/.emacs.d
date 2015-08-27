@@ -5,8 +5,8 @@
 
 ;; Author: Satoru Takabayashi <satoru-t@is.aist-nara.ac.jp>
 ;; URL: https://github.com/emacs-jp/migemo
-;; Version: 20140823.2003
-;; X-Original-Version: 1.9.1
+;; Package-Version: 20150412.741
+;; Version: 1.9.1
 ;; Keywords:
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -163,6 +163,8 @@
 (defvar migemo-process nil)
 (defvar migemo-buffer nil)
 (defvar migemo-current-input-method nil)
+(defvar migemo-current-input-method-title nil)
+(defvar migemo-input-method-function nil)
 (defvar migemo-search-pattern nil)
 (defvar migemo-pattern-alist nil)
 (defvar migemo-frequent-pattern-alist nil)
@@ -192,7 +194,8 @@
 	     "nil")))
 
 (defun migemo-start-process (name buffer program args)
-  (let ((proc (apply 'start-process name buffer program args)))
+  (let* ((process-connection-type nil)
+         (proc (apply 'start-process name buffer program args)))
     (if (fboundp 'set-process-coding-system)
 	(set-process-coding-system proc
 				   migemo-coding-system
@@ -614,11 +617,21 @@ into the migemo's regexp pattern."
   (when (and migemo-isearch-enable-p
 	     (boundp 'current-input-method))
     (setq migemo-current-input-method current-input-method)
+    (setq migemo-current-input-method-title current-input-method-title)
+    (setq migemo-input-method-function input-method-function)
     (when (and migemo-mw32-input-method
 	       (stringp migemo-current-input-method)
 	       (string= migemo-current-input-method migemo-mw32-input-method))
       (set-input-method nil))
-    (setq current-input-method nil)))
+    (setq current-input-method nil)
+    (setq current-input-method-title nil)
+    (setq input-method-function nil)
+    (when migemo-current-input-method
+      (unwind-protect
+          (run-hooks
+           'input-method-inactivate-hook
+           'input-method-deactivate-hook)
+        (force-mode-line-update)))))
 
 (defadvice isearch-done (after migemo-search-ad activate)
   "adviced by migemo."
@@ -630,7 +643,17 @@ into the migemo's regexp pattern."
 	       (stringp migemo-current-input-method)
 	       (string= migemo-current-input-method migemo-mw32-input-method))
       (set-input-method migemo-current-input-method))
-    (setq current-input-method migemo-current-input-method)))
+    (let ((state-changed-p (not (equal current-input-method migemo-current-input-method))))
+      (setq current-input-method migemo-current-input-method)
+      (setq current-input-method-title migemo-current-input-method-title)
+      (setq input-method-function migemo-input-method-function)
+      (when state-changed-p
+        (unwind-protect
+            (apply #'run-hooks (if current-input-method
+                                   '(input-method-activate-hook)
+                                 '(input-method-inactivate-hook
+                                   input-method-deactivate-hook)))
+          (force-mode-line-update))))))
 
 (defcustom migemo-message-prefix-face 'highlight
   "*Face of minibuffer prefix"
@@ -653,36 +676,23 @@ into the migemo's regexp pattern."
 (defvar isearch-lazy-highlight-start)
 (defvar isearch-lazy-highlight-end)
 
-(defun migemo-isearch-lazy-highlight-search ()
-  "Search ahead for the next or previous match, for lazy highlighting.
-Attempt to do the search exactly the way the pending isearch would.
-This function used with Megemo feature."
-  (let ((case-fold-search isearch-case-fold-search)
-        (choices (cond (isearch-word
-                        '(word-search-forward word-search-backward))
-                       (isearch-regexp
-                        '(re-search-forward re-search-backward))
-                       (migemo-isearch-enable-p
-                        '(re-search-forward re-search-backward t))
-                       (t
-                        '(search-forward search-backward))))
-	(pattern isearch-string))
-    (when (nth 2 choices)
-     (setq pattern (migemo-search-pattern-get isearch-string)))
-    (funcall (if isearch-forward
-		 (nth 0 choices) (nth 1 choices))
-	     pattern
-             (if isearch-forward
-                 (if isearch-lazy-highlight-wrapped
-                     isearch-lazy-highlight-start
-                   (window-end))
-               (if isearch-lazy-highlight-wrapped
-                   isearch-lazy-highlight-end
-                 (window-start)))
-             t)))
+(when (fboundp 'isearch-lazy-highlight-new-loop)
+  (defadvice isearch-lazy-highlight-new-loop (around migemo-isearch-lazy-highlight-new-loop
+                                                     activate)
+    "adviced by migemo"
+    (if (and migemo-isearch-enable-p
+             (not isearch-word)
+             (not isearch-regexp))
+        (let ((isearch-string (migemo-search-pattern-get isearch-string))
+              (isearch-regexp t))
+          ad-do-it)
+      ad-do-it)))
 
-(when (fboundp 'isearch-lazy-highlight-search)
-  (defalias 'isearch-lazy-highlight-search 'migemo-isearch-lazy-highlight-search))
+(when (fboundp 'replace-highlight)
+  (defadvice replace-highlight (around migemo-replace-highlight activate)
+    "adviced by migemo"
+    (let ((migemo-isearch-enable-p nil))
+      ad-do-it)))
 
 ;;;; for isearch-highlightify-region (XEmacs 21)
 (when (fboundp 'isearch-highlightify-region)
