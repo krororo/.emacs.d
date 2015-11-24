@@ -11,9 +11,9 @@
 ;;	Marius Vollmer <marius.vollmer@gmail.com>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
-;; Package-Requires: ((emacs "24.4") (dash "2.11.0") (with-editor "20150824"))
+;; Package-Requires: ((emacs "24.4") (dash "20151021.113") (with-editor "20151111"))
 ;; Keywords: git tools vc
-;; Package-Version: 20150824.1010
+;; Package-Version: 20151111.418
 ;; Homepage: https://github.com/magit/magit
 
 ;; This file is not part of GNU Emacs.
@@ -124,6 +124,8 @@
 ;;;; Declarations
 
 (defvar flyspell-generic-check-word-predicate)
+
+(declare-function magit-expand-git-file-name 'magit-git)
 
 ;;; Options
 ;;;; Variables
@@ -357,6 +359,21 @@ usually honor this wish and return non-nil."
        (git-commit-setup)))
 
 (defun git-commit-setup ()
+  ;; cygwin git will pass a cygwin path (/cygdrive/c/foo/.git/...),
+  ;; try to handle this in window-nt Emacs.
+  (--when-let
+      (and (eq system-type 'windows-nt)
+           (not (file-accessible-directory-p default-directory))
+           (if (require 'magit-git nil t)
+               ;; Emacs prepends a "c:".
+               (magit-expand-git-file-name (substring buffer-file-name 2))
+             ;; Fallback if we can't load `magit-git'.
+             (and (string-match "\\`[a-z]:/\\(cygdrive/\\)?\\([a-z]\\)/\\(.*\\)"
+                                buffer-file-name)
+                  (concat (match-string 2 buffer-file-name) ":/"
+                          (match-string 3 buffer-file-name)))))
+    (when (file-accessible-directory-p (file-name-directory it))
+      (find-alternate-file it)))
   (when git-commit-major-mode
     (funcall git-commit-major-mode))
   (setq with-editor-show-usage nil)
